@@ -1,0 +1,29 @@
+{
+  "name": "renewal_reminders",
+  "version": "1.0.0",
+  "description": "System for checking if members in our database need to be renewed",
+  "main": "scheduled_check.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ManchesterMakerspace/RenewalReminders.git"
+  },
+  "author": "Manchester Makerspace",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ManchesterMakerspace/RenewalReminders/issues"
+  },
+  "homepage": "https://github.com/ManchesterMakerspace/RenewalReminders#readme",
+  "private": true,
+    "dependencies": {
+      "@slack/client": "^3.6.0",
+      "mongoose": "^4.4.19",
+      "request": "^2.75.0"
+  },
+  "engines": {
+    "node": "4.2.4",
+    "npm": "2.14.12"
+  }
+}
