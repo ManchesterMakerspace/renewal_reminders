@@ -5,6 +5,7 @@ var A_DAY_LESS_THAN_TWO_WEEKS = 1123200000;
 var ONE_WEEK                  = 604800000;
 var A_DAY_LESS_THAN_ONE_WEEK  = 518400000;
 var ONE_DAY                   = 86400000;
+var WAIT_FOR_SLACK            = 50;
 var slack = require('./our_modules/slack_intergration.js');                      // get slack send and invite methodes
 
 var mongo = { // depends on: mongoose
@@ -30,13 +31,13 @@ var mongo = { // depends on: mongoose
 
 var check = {
     now: function(){
-        var cursor = member.find({}).cursor();
+        var cursor = mongo.member.find({}).cursor();
         cursor.on('data', check.memberExpiredOrAboutTo);
         cursor.on('close', check.onClose);
     },
     scheduled: function(){
-        var cursor = member.find({}).cursor();
-        cursor.on('data', check.member);
+        var cursor = mongo.member.find({}).cursor();
+        cursor.on('data', check.memberWarning);
         cursor.on('close', check.onClose);
     },
     every24hours: function(){
@@ -44,6 +45,8 @@ var check = {
         setTimeout(check.every24hours, ONE_DAY); // 24 hours in milliseconds
     },
     memberWarning: function(memberDoc){          // check if this member is close to expiring (FOR 24 hours) does not show expired members
+        if(memberDoc.groupName && !memberDoc.groupKeystone){return;} // skip group members
+        if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
         if(currentTime - TWO_WEEKS > membersExpiration && currentTime - A_DAY_LESS_THAN_TWO_WEEKS < membersExpiration){ // if in two week window
@@ -55,23 +58,35 @@ var check = {
         }
     },
     memberExpiredOrAboutTo: function(memberDoc){
+        if(memberDoc.groupName && !memberDoc.groupKeystone){return;}  // skip group members
+        if(memberDoc.status === 'Revoked'){return;}
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-        if( currentTime > membersExpiration){                      // if membership expired
-            slack.send(member.fullname + "'s membership expired"); // Notify expiration
+        if( currentTime > membersExpiration){                         // if membership expired
+            slack.send(memberDoc.fullname + "'s membership expired on " + new Date(memberDoc.expirationTime).toDateString()); // Notify expiration
         } else if (currentTime - TWO_WEEKS > membersExpiration){
-            slack.send(member.fullname + " will expire on " + new Date(memberDoc.expirationTime).toDateString());
+            slack.send(memberDoc.fullname + " will expire on " + new Date(memberDoc.expirationTime).toDateString());
         }
     },
     onClose: function(){
-        slack.send('full member check done');
+        slack.send('finishing up');
     }
 };
 
-if(process.argv[2]){  // if we pass an argument run it now!
-    slack.init('test_channel', 'one time check running'); // init in renewals channel
-    check.now();                                          // run the check now
+mongo.init();
+if(process.argv[2] === 'run_once'){                      // if we pass an argument run it now!
+    slack.init('test_channel', 'Running Quick Check');   // init in renewals channel
+    setTimeout(check.now, WAIT_FOR_SLACK);               // wait a bit for slack to start up then "check now"
 } else {
-    slack.init('test_channel', 'scheduled expiration checker fired up'); // init in renewals channel
-    check.every24hours();
+    slack.init('test_channel', 'Scheduled expiration checker fired up'); // init in renewals channel
+    setTimeout(check.now, WAIT_FOR_SLACK);
+    var hourToSend = 7;                                       // provide defult run time
+    if(typeof process.argv[2] === 'number' && process.argv[2] < 24){hourToSend = process.argv[2];} // and hour can be passed between 0 and 23
+    var currentTime = new Date().getTime();                   // current millis from epoch
+    var tomorrowAtX = new Date();                             // create date object for tomorrow
+    tomorrowAtX.setDate(tomorrowAtX.getDate() + 1);           // point date to tomorrow
+    tomorrowAtX.setHours(hourToSend, 0, 0, 0);                // set hour to send tomorrow
+    var startInXMillis = tomorrowAtX.getTime() - currentTime; // subtract tomo millis from epoch from current millis from epoch
+    slack.send('next Scheduled run is at ' + tomorrowAtX.toISOString());
+    setTimeout(check.every24hours, startInXMillis); // wait a bit for slack to start up then run a check and schedual checks there after
 }
