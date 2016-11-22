@@ -49,11 +49,11 @@ var check = {
         if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-        if(currentTime - TWO_WEEKS > membersExpiration && currentTime - A_DAY_LESS_THAN_TWO_WEEKS < membersExpiration){ // if in two week window
+        if(currentTime + TWO_WEEKS > membersExpiration && currentTime + A_DAY_LESS_THAN_TWO_WEEKS < membersExpiration){ // if in two week window
             slack.send(member.fullname + " has two weeks left"); // Notify comming expiration
-        } else if (currentTime - ONE_WEEK > membersExpiration && currentTime - A_DAY_LESS_THAN_ONE_WEEK < membersExpiration){
+        } else if (currentTime + ONE_WEEK > membersExpiration && currentTime + A_DAY_LESS_THAN_ONE_WEEK < membersExpiration){
             slack.send(member.fullname + " has a week left");    // Notify comming expiration
-        } else if (currentTime - ONE_DAY > membersExpiration && currentTime < membersExpiration){
+        } else if (currentTime + ONE_DAY > membersExpiration && currentTime < membersExpiration){
             slack.send(member.fullname + " has a day left");     // Notify comming expiration
         }
     },
@@ -64,7 +64,7 @@ var check = {
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
         if( currentTime > membersExpiration){                         // if membership expired
             slack.send(memberDoc.fullname + "'s membership expired on " + new Date(memberDoc.expirationTime).toDateString()); // Notify expiration
-        } else if (currentTime - TWO_WEEKS > membersExpiration){
+        } else if (currentTime + TWO_WEEKS > membersExpiration){
             slack.send(memberDoc.fullname + " will expire on " + new Date(memberDoc.expirationTime).toDateString());
         }
     },
