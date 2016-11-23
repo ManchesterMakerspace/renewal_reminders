@@ -68,17 +68,18 @@ var check = {
             slack.send(memberDoc.fullname + " will expire on " + new Date(memberDoc.expirationTime).toDateString());
         }
     },
-    onClose: function(){
-        slack.send('finishing up');
+    onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
+        // console.log('query closed');
+        // slack.send('finishing up');
     }
 };
 
 mongo.init();
 if(process.argv[2] === 'run_once'){                      // if we pass an argument run it now!
-    slack.init('test_channel', 'Running Quick Check');   // init in renewals channel
+    slack.init('renewals', 'Running Quick Check...');    // init in renewals channel
     setTimeout(check.now, WAIT_FOR_SLACK);               // wait a bit for slack to start up then "check now"
 } else {
-    slack.init('test_channel', 'Scheduled expiration checker fired up'); // init in renewals channel
+    slack.init('renewals', 'Starting expiration checker...'); // init in renewals channel
     setTimeout(check.now, WAIT_FOR_SLACK);
     var hourToSend = 7;                                       // provide defult run time
     if(typeof process.argv[2] === 'number' && process.argv[2] < 24){hourToSend = process.argv[2];} // and hour can be passed between 0 and 23
