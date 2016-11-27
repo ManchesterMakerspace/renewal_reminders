@@ -7,12 +7,18 @@ Then run chmod +x start.sh to make this file executable
 Then to start type ./start.sh
 
     #!/bin/bash
-
+    # Address of your mongo database
     MONGODB_URI="mongodb://host/urdb"
     export MONGODB_URI
-
+    # Address of slack webhook intergration channel
     SLACK_WEBHOOK_URL="urhook"
     export SLACK_WEBHOOK_URL
+    # Which of your slack channels to broadcast to
+    BROADCAST_CHANNEL="test_channel"
+    export BROADCAST_CHANNEL
+    # Hour to run report in day 0-23
+    HOUR_TO_SEND=7
+    export HOUR_TO_SEND
 
     # State whether testing application or not
     TESTING_MA=false
