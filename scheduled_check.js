@@ -5,7 +5,42 @@ var DAYS_13  = 1123200000;
 var ONE_WEEK = 604800000;
 var DAYS_6   = 518400000;
 var ONE_DAY  = 86400000;
-var slack = require('./our_modules/slack_intergration.js');                          // get slack send and invite methods
+
+var slack = {
+    io: require('socket.io-client'),                         // to connect to our slack intergration server
+    firstConnect: false,
+    connected: false,
+    init: function(){
+        try {
+            slack.io = slack.io(process.env.MASTER_SLACKER); // slack https server
+            slack.firstConnect = true;
+        } catch (error){
+            console.log('could not connect to ' + process.env.MASTER_SLACKER + ' cause:' + error);
+            setTimeout(slack.init, 60000); // try again in a minute maybe we are disconnected from the network
+        }
+        if(slack.firstConnect){
+            slack.io.on('connect', function authenticate(){  // connect with masterslacker
+                slack.io.emit('authenticate', {
+                    token: process.env.CONNECT_TOKEN,
+                    slack: {
+                        username: 'Renewal Reminders',
+                        channel: 'test_channel',
+                        iconEmoji: ':reminder_ribbon:'
+                    }
+                }); // its important lisner know that we are for real
+                slack.connected = true;
+            });
+            slack.io.on('disconnect', function disconnected(){slack.connected = false;});
+        }
+    },
+    send: function(msg){
+        if(slack.connected){
+            slack.io.emit('msg', msg);
+        } else {
+            console.log('404:'+msg);
+        }
+    }
+};
 
 var mongo = { // depends on: mongoose
     ose: require('mongoose'),
@@ -78,6 +113,6 @@ var getMillis = {
 };
 
 mongo.init(process.env.MONGODB_URI);                                         // connect to our database
-slack.init(process.env.BROADCAST_CHANNEL, 'Restarting expiration checker');  // init in renewals channel
-setTimeout(function(){check.now(check.nextTwoWeeksAndExpired);}, 100);       // Broad expriation and warning check on start up
+slack.init();                                                                // init in renewals channel
+setTimeout(function(){check.now(check.nextTwoWeeksAndExpired);}, 9000);      // Broad expriation and warning check on start up
 setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
