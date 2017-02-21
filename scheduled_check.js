@@ -24,7 +24,7 @@ var slack = {
                     token: process.env.CONNECT_TOKEN,
                     slack: {
                         username: 'Renewal Reminders',
-                        channel: 'test_channel',
+                        channel: 'renewals',
                         iconEmoji: ':reminder_ribbon:'
                     }
                 }); // its important lisner know that we are for real
