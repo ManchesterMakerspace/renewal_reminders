@@ -23,9 +23,10 @@ var slack = {
                 slack.io.emit('authenticate', {
                     token: process.env.CONNECT_TOKEN,
                     slack: {
-                        username: 'Renewal Reminders',
-                        channel: 'renewals',
-                        iconEmoji: ':reminder_ribbon:'
+                        username: 'Renewal Bot',
+                        // channel: 'renewals',
+                        channel: 'test_channel',
+                        iconEmoji: ':key:'
                     }
                 }); // its important lisner know that we are for real
                 slack.connected = true;
@@ -36,6 +37,13 @@ var slack = {
     send: function(msg){
         if(slack.connected){
             slack.io.emit('msg', msg);
+        } else {
+            console.log('404:'+msg);
+        }
+    },
+    pm: function(handle, msg){
+        if(slack.connected){
+            slack.io.emit('pm', {userhandle: handle, msg: msg});
         } else {
             console.log('404:'+msg);
         }
@@ -78,23 +86,19 @@ var check = {
         if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-        if((currentTime + TWO_WEEKS) > membersExpiration && (currentTime + DAYS_13) < membersExpiration){ // if in two week window
-            slack.send(memberDoc.fullname + " has two weeks left");  // Notify comming expiration
-        } else if ((currentTime + ONE_WEEK) > membersExpiration && (currentTime + DAYS_6) < membersExpiration){
-            slack.send(memberDoc.fullname + " has a week left");     // Notify comming expiration
-        } else if ((currentTime + ONE_DAY) > membersExpiration && currentTime < membersExpiration){
-            slack.send(memberDoc.fullname + " has a day left");      // Notify comming expiration
-        }
-    },
-    nextTwoWeeksAndExpired: function(memberDoc){
-        if(memberDoc.groupName && !memberDoc.groupKeystone){return;}  // skip group members
-        if(memberDoc.status === 'Revoked'){return;}
-        var currentTime = new Date().getTime();
-        var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-        if(currentTime > membersExpiration){                          // if membership expired
-            slack.send(memberDoc.fullname + "'s membership expired on " + new Date(memberDoc.expirationTime).toDateString()); // Notify expiration
-        } else if (currentTime + TWO_WEEKS > membersExpiration){
-            slack.send(memberDoc.fullname + " will expire on " + new Date(memberDoc.expirationTime).toDateString());
+        if((currentTime + TWO_WEEKS) > membersExpiration && (currentTime + DAYS_13) < membersExpiration){            // if in two week window
+            var expiry = new Date(memberDoc.expirationTime).toDateString();
+            slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
+            if(memberDoc.slackHandle){                                    // if handle is in member doc
+                var msg = 'Your membership expiration is:' + expiry;      // give member their expiration date
+                msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
+                msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
+                msg += '\nThank You!,';
+                msg += '\nRenewal Bot';
+                slack.pm({userhandle: memberDoc.slackHandle, msg: msg});  // private message member their expiration time
+            } else {
+                slack.send(memberDoc.fullname + ' needs to have their handle added to our db');
+            }
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
@@ -112,7 +116,8 @@ var getMillis = {
     }
 };
 
-mongo.init(process.env.MONGODB_URI);                                         // connect to our database
-slack.init();                                                                // init in renewals channel
-setTimeout(function(){check.now(check.nextTwoWeeksAndExpired);}, 9000);      // Broad expriation and warning check on start up
-setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
+mongo.init(process.env.MONGODB_URI);                              // connect to our database
+slack.init();                                                     // init in renewals channel
+// var runTime = getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND); // gets millis till this hour tomorrow
+var runTime = 3000;                                             // test runtime
+setTimeout(check.daily, runTime);                                 // schedual checks daily for warnigs at x hour from here after
