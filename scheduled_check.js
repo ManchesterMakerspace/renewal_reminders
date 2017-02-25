@@ -67,6 +67,7 @@ var mongo = { // depends on: mongoose
             groupSize: {type: Number},                                                // notes how many members in group given in one
             password: {type: String},                                                 // for admin cards only
             email: {type: String},                                                    // store email of member for prosterity sake
+            slackHandle: {type: String}                                               // store slack username
         }));
     }
 };
