@@ -24,8 +24,8 @@ var slack = {
                     token: process.env.CONNECT_TOKEN,
                     slack: {
                         username: 'Renewal Bot',
-                        // channel: 'renewals',
-                        channel: 'test_channel',
+                        channel: 'renewals',
+                        // channel: 'test_channel',
                         iconEmoji: ':key:'
                     }
                 }); // its important lisner know that we are for real
@@ -79,10 +79,11 @@ var check = {
         cursor.on('close', check.onClose);
     },
     daily: function(){
-        check.now(check.upcomming);       // stream results to slack
-        setTimeout(check.daily, ONE_DAY); // make upcomming expiration check every interval
+        slack.send('Running renewal reminders'); // Just something to note that its still alive
+        check.now(check.upcomming);              // stream results to slack
+        setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
-    upcomming: function(memberDoc){       // check if this member is close to expiring (FOR 24 hours) does not show expired members
+    upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.groupName && !memberDoc.groupKeystone){return;} // skip group members
         if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
@@ -119,6 +120,6 @@ var getMillis = {
 
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
 slack.init();                                                     // init in renewals channel
-// var runTime = getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND); // gets millis till this hour tomorrow
-var runTime = 3000;                                             // test runtime
+var runTime = getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND); // gets millis till this hour tomorrow
+// var runTime = 3000;                                             // test runtime
 setTimeout(check.daily, runTime);                                 // schedual checks daily for warnigs at x hour from here after
