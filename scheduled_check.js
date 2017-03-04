@@ -97,7 +97,7 @@ var check = {
                 msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
                 msg += '\nThank You!,';
                 msg += '\nRenewal Bot';
-                slack.pm({userhandle: memberDoc.slackHandle, msg: msg});  // private message member their expiration time
+                slack.pm(memberDoc.slackHandle, msg);                    // private message member their expiration time
             } else {
                 slack.send(memberDoc.fullname + ' needs to have their handle added to our db');
             }
