@@ -35,18 +35,12 @@ var slack = {
         }
     },
     send: function(msg){
-        if(slack.connected){
-            slack.io.emit('msg', msg);
-        } else {
-            console.log('404:'+msg);
-        }
+        if(slack.connected){ slack.io.emit('msg', msg);
+        } else { console.log('404:'+msg); }
     },
     pm: function(handle, msg){
-        if(slack.connected){
-            slack.io.emit('pm', {userhandle: handle, msg: msg});
-        } else {
-            console.log('404:'+msg);
-        }
+        if(slack.connected){ slack.io.emit('pm', {userhandle: handle, msg: msg});
+        } else { console.log('404:'+msg);}
     }
 };
 
@@ -67,7 +61,9 @@ var mongo = { // depends on: mongoose
             groupSize: {type: Number},                                                // notes how many members in group given in one
             password: {type: String},                                                 // for admin cards only
             email: {type: String},                                                    // store email of member for prosterity sake
-            slackHandle: {type: String}                                               // store slack username
+            slackHandle: {type: String},                                              // store slack username
+            notificationAck: {type: Boolean},                                         // recognizes a notification was sent out
+            expiredAck: {type: Boolean}                                               // recognizes doorboto was updated with expiration
         }));
     }
 };
@@ -79,8 +75,12 @@ var check = {
         cursor.on('close', check.onClose);
     },
     daily: function(){
-        slack.send('Running renewal reminders'); // Just something to note that its still alive
-        check.now(check.upcomming);              // stream results to slack
+        if(slack.connected){                         // if we are not connected to our slack server don't bother
+            slack.send('Running renewal reminders'); // Just something to note that its still alive
+            check.now(check.upcomming);              // stream results to slack
+        } else {
+            console.log('was not connected to slack on: ' + new Date().toDateString());
+        }
         setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
@@ -88,7 +88,10 @@ var check = {
         if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-        if((currentTime + TWO_WEEKS) > membersExpiration && (currentTime + DAYS_13) < membersExpiration){            // if in two week window
+
+        if(memberDoc.notificationAck){                                    // in this way it doesnt have to exist
+                                                                          // logic to remove ack needs to go into a renewal action
+        } else if(membersExpiration < (currentTime + TWO_WEEKS)){         // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
             if(memberDoc.slackHandle){                                    // if handle is in member doc
@@ -101,6 +104,8 @@ var check = {
             } else {
                 slack.send(memberDoc.fullname + ' needs to have their handle added to our db');
             }
+            memberDoc.notificationAck = true;                            // signals that reminder has been sent
+            memberDoc.save();                                            // does a intsert $set notificationAck = true
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
