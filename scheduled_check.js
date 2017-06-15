@@ -24,8 +24,7 @@ var slack = {
                     token: process.env.CONNECT_TOKEN,
                     slack: {
                         username: 'Renewal Bot',
-                        channel: 'renewals',
-                        // channel: 'test_channel',
+                        channel: process.env.SLACK_CHANNEL,
                         iconEmoji: ':key:'
                     }
                 }); // its important lisner know that we are for real
