@@ -4,6 +4,8 @@ To start scheduler, create a file called start.sh put more or less the info bell
 
 Then run chmod +x start.sh to make this file executable
 
+Working on getting this service to immediately deploy on push
+
 Then to start type ./start.sh
 
     #!/bin/bash
