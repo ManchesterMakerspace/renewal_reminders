@@ -1,6 +1,8 @@
 # Renewal reminder scheduler
 
-To start scheduler, create a file called start.sh put more or less the info bellow with correct information
+This is a cron job to remind makerspace members that they might need to renew soon
+
+To start scheduler, create a file called start.sh put more or less the info below with correct information
 
 Then run chmod +x start.sh to make this file executable
 
