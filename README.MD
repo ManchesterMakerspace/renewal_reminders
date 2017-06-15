@@ -7,27 +7,18 @@ Then run chmod +x start.sh to make this file executable
 Then to start type ./start.sh
 
     #!/bin/bash
-    # Address of your mongo database
-    MONGODB_URI="mongodb://host/urdb"
-    export MONGODB_URI
-    # Address of slack webhook intergration channel
-    SLACK_WEBHOOK_URL="urhook"
-    export SLACK_WEBHOOK_URL
-    # Which of your slack channels to broadcast to
-    BROADCAST_CHANNEL="test_channel"
-    export BROADCAST_CHANNEL
-    # Hour to run report in day 0-23
-    HOUR_TO_SEND=7
-    export HOUR_TO_SEND
 
-    # State whether testing application or not
-    TESTING_MA=false
-    export TESTING_MA
+    export MONGODB_URI="mongodb://host/urdb" # Address of your mongo database
+    export MASTER_SLACKER="integration-url"  # Address of slack integration server
+    export CONNECT_TOKEN="your-token"        # token to use slack server
+    export HOUR_TO_SEND=7                    # Hour to run report in day 0-23
+    export TESTING_MA=true                   # State whether testing application or not
 
     if $TESTING_MA; then
-        # run at 8 next day
-        node scheduled_check.js 8
+        export CHANNEL="test_channel"
+        node scheduled_check.js
     else
+        export CHANNEL="prod_channel_to_send_to"
         npm install
-        pm2 start scheduled_check.js 8
+        npm run start
     fi
