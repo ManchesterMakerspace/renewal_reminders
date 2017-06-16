@@ -10,6 +10,8 @@ var slack = {
     io: require('socket.io-client'),                         // to connect to our slack intergration server
     firstConnect: false,
     connected: false,
+    name: process.env.TRUSTED_NAME,
+    live: process.env.LIVE, // not set in any env besides prod
     init: function(){
         try {
             slack.io = slack.io(process.env.MASTER_SLACKER); // slack https server
@@ -23,7 +25,7 @@ var slack = {
                 slack.io.emit('authenticate', {
                     token: process.env.CONNECT_TOKEN,
                     slack: {
-                        username: 'Renewal Bot',
+                        username: slack.name,
                         channel: process.env.SLACK_CHANNEL,
                         iconEmoji: ':key:'
                     }
@@ -38,8 +40,11 @@ var slack = {
         } else { console.log('404:'+msg); }
     },
     pm: function(handle, msg){
-        if(slack.connected){ slack.io.emit('pm', {userhandle: handle, msg: msg});
-        } else { console.log('404:'+msg);}
+        if(slack.connected && slack.live){ slack.io.emit('pm', {userhandle: handle, msg: msg});
+        } else {
+            if(slack.live){console.log('404:'+msg);}
+            else{slack.send('pm: ' + msg);} // testing case
+        }
     }
 };
 
@@ -98,7 +103,7 @@ var check = {
                 msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
                 msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
                 msg += '\nThank You!,';
-                msg += '\nRenewal Bot';
+                msg += '\n' + slack.name;
                 slack.pm(memberDoc.slackHandle, msg);                    // private message member their expiration time
             } else {
                 slack.send(memberDoc.fullname + ' needs to have their handle added to our db');
@@ -124,6 +129,9 @@ var getMillis = {
 
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
 slack.init();                                                     // init in renewals channel
-var runTime = getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND); // gets millis till this hour tomorrow
-// var runTime = 3000;                                             // test runtime
-setTimeout(check.daily, runTime);                                 // schedual checks daily for warnigs at x hour from here after
+if(slack.live){
+    setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
+} else {                                                          // testing route
+    console.log('starting ' + slack.name);
+    setTimeout(check.daily, 3000); // give it some time to connect to masterslacker
+}
