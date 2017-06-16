@@ -16,12 +16,15 @@ var orcastrate = {
 };
 
 var config = {
-    env: process.env.ENVIRONMENT,
     crypto: require('crypto'),
     fs: require('fs'),
     zlib: require('zlib'),
-    options: {
-        env: require('./config/decypted_' + config.env)
+    options: {},
+    init: function(environment){
+        config.options = {
+            env: require('./config/decrypted_' + environment + '.js')
+        };
+        console.log(JSON.stringify(config.options.env, null, 4));
     }
 };
 
@@ -30,21 +33,15 @@ var run = {
     deploy: function(){
         var stage1 = run.child.exec('git pull &&'+PATH+'npm install');
         stage1.on('close', function closeEvent(code){
-            if(code){
-                console.log('Deploy failed with code ' + code);
-            } else {
-                if(run.service){
-                    run.service.kill();         // send kill signal to current process then start it again
-                } else {run.start();}           // if its not allready start service up
+            if(code){console.log('Deploy failed with code ' + code);}
+            else {
+                if(run.service){run.service.kill();} // send kill signal to current process then start it again
+                else           {run.start();}        // if its not allready start service up
             }
         });
     },
     start: function(code){
-        if(code){
-            run.restarts++;
-            console.log('restart' + run.restarts + ' with code: ' + code);
-        }
-        run.restart(code);
+        if(code){console.log('restart with code: ' + code);}
         run.service = run.child.exec(PATH+'npm run start', config.options);
         run.service.stdout.on('data', function(data){console.log("" + data);});
         run.service.stderr.on('data', function(data){console.log("" + data);});
@@ -53,6 +50,6 @@ var run = {
     }
 };
 
-
+config.init(process.env.ENVIRONMENT);
 orcastrate.init(process.env.ORCASTRATE_SERVER, process.env.CONNECT_TOKEN, process.env.REPO_NAME);
 run.deploy();
