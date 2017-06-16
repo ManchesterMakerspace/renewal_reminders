@@ -1,6 +1,5 @@
 node_modules
-start.sh
-test_*.js
+*.sh
 local_test
 config/decrypted*
-manage.sh
+config/*.sh

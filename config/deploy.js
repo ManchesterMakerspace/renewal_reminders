@@ -16,27 +16,45 @@ var orcastrate = {
 };
 
 var config = {
+    env: process.env.ENVIRONMENT,
+    key: process.env.CONFIG_KEY,
     crypto: require('crypto'),
     fs: require('fs'),
-    zlib: require('zlib'),
     options: {},
-    init: function(environment){
-        config.options = {
-            env: require('./config/decrypted_' + environment + '.js')
-        };
-        console.log(JSON.stringify(config.options.env, null, 4));
+    run: function(onFinsh){
+        var readFile = config.fs.createReadStream('encrypted_' + config.env);
+        var decrypt = config.crypto.createDecipher('aes-256-ctr', config.key);
+        var writeFile = config.fs.createWriteStream('decrypted_' + config.env + '.js');
+        readFile.pipe(decrypt).pipe(writeFile);
+        writeFile.on('finish', function(){
+            config.options = {env: require('./decrypted_' + config.env + '.js')};
+            console.log(JSON.stringify(config.options.env, null, 4));
+            onFinsh(); // call next thing to do, prabably npm install
+        });
+
     }
 };
 
 var run = {
     child: require('child_process'),
-    deploy: function(){
-        var stage1 = run.child.exec('git pull &&'+PATH+'npm install');
-        stage1.on('close', function closeEvent(code){
-            if(code){console.log('Deploy failed with code ' + code);}
+    deploy: function(){ // or at least start to
+        var gitPull = run.child.exec('git pull');
+        gitPull.stdout.on('data', function(data){console.log("" + data);});
+        gitPull.stderr.on('data', function(data){console.log("" + data);});
+        gitPull.on('close', function donePull(code){
+            if(code){console.log('no pull? ' + code);}
+            else {config.run(run.install);} // decrypt configuration then install
+        });
+    },
+    install: function(){ // and probably restart when done
+        var npmInstall = run.child.exec(PATH+'npm install');
+        npmInstall.stdout.on('data', function(data){console.log("" + data);});
+        npmInstall.stderr.on('data', function(data){console.log("" + data);});
+        npmInstall.on('close', function doneInstall(code){
+            if(code){console.log('bad install? ' + code);}
             else {
                 if(run.service){run.service.kill();} // send kill signal to current process then start it again
-                else           {run.start();}        // if its not allready start service up
+                else           {run.start();}        // if its not already start service up
             }
         });
     },
@@ -50,6 +68,5 @@ var run = {
     }
 };
 
-config.init(process.env.ENVIRONMENT);
 orcastrate.init(process.env.ORCASTRATE_SERVER, process.env.CONNECT_TOKEN, process.env.REPO_NAME);
 run.deploy();
