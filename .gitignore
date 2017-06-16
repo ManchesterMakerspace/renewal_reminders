@@ -1,3 +1,6 @@
 node_modules
 start.sh
 test_*.js
+local_test
+config/decrypted*
+manage.sh
