@@ -35,18 +35,14 @@ if you need to change environment variables, do so in its decrypted_*.js file. Y
 
 To start scheduler, create a file called start.sh put more or less the info below with correct information for your implementation. You'll want to look into replicating the masterslacker server or forking and using the slack library directly. We uses the masterslacker server because it abstracts controlling credentials and gives some ability to do admin task with out sharing those credentials
 
-Then run chmod +x start.sh to make this file executable
+Template to create start.sh file and run it
 
-Then to start type ./start.sh
-
-    #!/bin/bash
-
+    touch start.sh && chmod +x start.sh && echo "#!/bin/bash
     export MONGODB_URI="mongodb://host/urdb" # Address of your mongo database
     export MASTER_SLACKER="integration-url"  # Address of slack integration server
     export CONNECT_TOKEN="your-token"        # token to use slack server
     export HOUR_TO_SEND=7                    # Hour to run report in day 0-23
     export TESTING_MA=true                   # State whether testing application or not
-
     if $TESTING_MA; then
         export CHANNEL="test_channel"
         node scheduled_check.js
@@ -54,4 +50,4 @@ Then to start type ./start.sh
         export CHANNEL="prod_channel_to_send_to"
         npm install
         npm run start
-    fi
+    fi" >> start.sh && ./start.sh
