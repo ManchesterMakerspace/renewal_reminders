@@ -6,7 +6,7 @@ Runs once a day everyday
 
 ### Makerspace Contributors
 
-Because this is low risk service changes deploy on push to master
+Because this is low risk service changes deploy on push to master. Have yet to really test branches out
 
 Requires running mongod, node, and npm
 
@@ -30,7 +30,7 @@ if you need to change environment variables, do so in its decrypted_*.js file. Y
     export KEYS="<CONFIG_KEY>"
     node encrypt.js
     " >> /config/crypt_all_the_things.sh && cd config/ && ./crypt_all_the_things.sh
- 
+
 ### If creating a different system
 
 To start scheduler, create a file called start.sh put more or less the info below with correct information for your implementation. You'll want to look into replicating the masterslacker server or forking and using the slack library directly. We uses the masterslacker server because it abstracts controlling credentials and gives some ability to do admin task with out sharing those credentials
