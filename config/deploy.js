@@ -20,7 +20,7 @@ var config = {
     key: process.env.CONFIG_KEY,
     crypto: require('crypto'),
     fs: require('fs'),
-    options: {},
+    options: {}, // ultimately config vars are stored here and past to program being tracked
     run: function(onFinsh){
         var readFile = config.fs.createReadStream('encrypted_' + config.env);
         var decrypt = config.crypto.createDecipher('aes-256-ctr', config.key);
