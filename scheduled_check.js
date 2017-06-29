@@ -73,6 +73,7 @@ var mongo = { // depends on: mongoose
 };
 
 var check = {
+    activeMembers: 0,
     now: function(parsingFunction){       // pass a function to iterate over a generic mongo stream
         var cursor = mongo.member.find({}).cursor();
         cursor.on('data', parsingFunction);
@@ -80,7 +81,6 @@ var check = {
     },
     daily: function(){
         if(slack.connected){                         // if we are not connected to our slack server don't bother
-            slack.send('Running renewal reminders'); // Just something to note that its still alive
             check.now(check.upcomming);              // stream results to slack
         } else {
             console.log('was not connected to slack on: ' + new Date().toDateString());
@@ -93,7 +93,9 @@ var check = {
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
 
-        if(memberDoc.notificationAck){                                    // in this way it doesnt have to exist
+        if(membersExpiration > currentTime){ check.activeMembers++; }     // check and increment, if active member
+
+        if(memberDoc.notificationAck){                                    // TODO this is too messy, needs to be cleaned up
                                                                           // logic to remove ack needs to go into a renewal action
         } else if(membersExpiration < (currentTime + TWO_WEEKS)){         // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
@@ -113,7 +115,11 @@ var check = {
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
-        // console.log('query closed'); // slack.send('finishing up');
+        setTimeout(check.memberCount, 10000); // onClose is just when the query is finished, not when the data has been processed
+    },
+    memberCount: function(){
+        slack.send('Just ran renewal reminders. Currently we have ' + check.activeMembers + ' active members');
+        check.activeMembers = 0;
     }
 };
 
