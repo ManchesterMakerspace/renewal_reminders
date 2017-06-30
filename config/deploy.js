@@ -68,5 +68,5 @@ var run = {
     }
 };
 
-orcastrate.init(process.env.ORCASTRATE_SERVER, process.env.CONNECT_TOKEN, process.env.REPO_NAME);
+// orcastrate.init(process.env.ORCASTRATE_SERVER, process.env.CONNECT_TOKEN, process.env.REPO_NAME);
 run.deploy();
