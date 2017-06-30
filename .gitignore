@@ -2,4 +2,3 @@ node_modules
 *.sh
 local_test
 config/decrypted*
-config/*.sh

@@ -14,22 +14,22 @@ To test locally reach out on the slack #access_control channel for the key and a
 
 Edit the following command with the right env, token, and key and run it in bash (root of project) to start things up
 
-    touch /config/kick_off_cd.sh && chmod +x /config/kick_off_cd.sh && echo " #!/bin/bash
+    touch kick_off_cd.sh && chmod +x kick_off_cd.sh && echo " #!/bin/bash
     export ENVIRONMENT="local"
     export ORCASTRATE_SERVER="https://orcastrate.herokuapp.com/"
     export CONNECT_TOKEN=<TEST_TOKEN>
     export REPO_NAME="test_reminders" # will not auto deploy
     export CONFIG_KEY=<CONFIG_KEY_FOR_THIS_ENV>
     node deploy.js
-    " >> /config/kick_off_cd.sh && cd config/ && ./kick_off_cd.sh
+    " >> kick_off_cd.sh  && ./kick_off_cd.sh
 
 if you need to change environment variables, do so in its decrypted_*.js file. You will need to write over the current encrypted_* file for that environment to commit to github. This can be done by running encrypt.js needs the config key used to decrypt. After editing the following template with proper key and env run it in the root of the project
 
-    touch /config/crypt_all_the_things.sh && chmod +x crypt_all_the_things.sh && echo "#!/bin/bash
+    touch crypt_all_the_things.sh && chmod +x crypt_all_the_things.sh && echo "#!/bin/bash
     export ENVS="local"
     export KEYS="<CONFIG_KEY>"
     node encrypt.js
-    " >> /config/crypt_all_the_things.sh && cd config/ && ./crypt_all_the_things.sh
+    " >> crypt_all_the_things.sh && ./crypt_all_the_things.sh
 
 ### If creating a different system
 

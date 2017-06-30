@@ -41,10 +41,10 @@ var slack = {
     },
     pm: function(handle, msg){
         if(slack.connected){
-            if(slack.live){              // given this is production, send the message for real
+            if(slack.live === 'true'){   // given this is production, send the message for real
                 slack.io.emit('pm', {userhandle: handle, msg: msg});
             } else {
-                slack.send('pm:' + msg); // testing case
+                slack.send('pm to ' + handle + ': ' + msg); // testing case
             }
         } else { console.log('404:'+msg); }
     }
@@ -137,7 +137,7 @@ var getMillis = {
 
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
 slack.init();                                                     // init in renewals channel
-if(slack.live){
+if(slack.live === 'true'){
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
     console.log('starting ' + slack.name);
