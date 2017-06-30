@@ -40,11 +40,13 @@ var slack = {
         } else { console.log('404:'+msg); }
     },
     pm: function(handle, msg){
-        if(slack.connected && slack.live){ slack.io.emit('pm', {userhandle: handle, msg: msg});
-        } else {
-            if(slack.live){console.log('404:'+msg);}
-            else{slack.send('pm: ' + msg);} // testing case
-        }
+        if(slack.connected){
+            if(slack.live){              // given this is production, send the message for real
+                slack.io.emit('pm', {userhandle: handle, msg: msg});
+            } else {
+                slack.send('pm:' + msg); // testing case
+            }
+        } else { console.log('404:'+msg); }
     }
 };
 
