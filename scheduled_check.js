@@ -112,8 +112,10 @@ var check = {
             } else {
                 slack.send(memberDoc.fullname + ' needs to have their handle added to our db');
             }
-            memberDoc.notificationAck = true;                            // signals that reminder has been sent
-            memberDoc.save();                                            // does a intsert $set notificationAck = true
+            if(slack.live === 'true'){
+                memberDoc.notificationAck = true;                            // signals that reminder has been sent
+                memberDoc.save();                                            // does a intsert $set notificationAck = true
+            }
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
