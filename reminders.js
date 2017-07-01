@@ -83,7 +83,6 @@ var check = {
     },
     daily: function(){
         if(slack.connected){                         // if we are not connected to our slack server don't bother
-            console.log('running daily check');
             check.now(check.upcomming);              // stream results to slack
         } else {
             console.log('was not connected to slack on: ' + new Date().toDateString());
@@ -91,7 +90,6 @@ var check = {
         setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
-        console.log('processing data...');
         if(memberDoc.groupName && !memberDoc.groupKeystone){return;} // skip group members
         if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
@@ -121,11 +119,9 @@ var check = {
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
-        console.log('closing query');
         setTimeout(check.memberCount, 10000); // onClose is just when the query is finished, not when the data has been processed
     },
     memberCount: function(){
-        console.log('saying that we are done');
         slack.send('Just ran renewal reminders. Currently we have ' + check.activeMembers + ' active members');
         check.activeMembers = 0;
     }
@@ -136,7 +132,7 @@ var getMillis = {
         var currentTime = new Date().getTime();         // current millis from epoch
         var tomorrowAtX = new Date();                   // create date object for tomorrow
         // tomorrowAtX.setDate(tomorrowAtX.getDate() + 1); // point date to tomorrow
-        tomorrowAtX.setHours(19, 22, 0, 0);            // set hour to send tomorrow
+        tomorrowAtX.setHours(19, 31, 0, 0);            // set hour to send tomorrow
         return tomorrowAtX.getTime() - currentTime;     // subtract tomo millis from epoch from current millis from epoch
     }
 };
