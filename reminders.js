@@ -131,8 +131,8 @@ var getMillis = {
     toTimeTomorrow: function(hour){
         var currentTime = new Date().getTime();         // current millis from epoch
         var tomorrowAtX = new Date();                   // create date object for tomorrow
-        // tomorrowAtX.setDate(tomorrowAtX.getDate() + 1); // point date to tomorrow
-        tomorrowAtX.setHours(19, 31, 0, 0);            // set hour to send tomorrow
+        tomorrowAtX.setDate(tomorrowAtX.getDate() + 1); // point date to tomorrow
+        tomorrowAtX.setHours(hour, 0, 0, 0);            // set hour to send tomorrow
         return tomorrowAtX.getTime() - currentTime;     // subtract tomo millis from epoch from current millis from epoch
     }
 };
