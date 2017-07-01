@@ -83,6 +83,7 @@ var check = {
     },
     daily: function(){
         if(slack.connected){                         // if we are not connected to our slack server don't bother
+            console.log('running daily check');
             check.now(check.upcomming);              // stream results to slack
         } else {
             console.log('was not connected to slack on: ' + new Date().toDateString());
@@ -140,7 +141,6 @@ var getMillis = {
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
 slack.init();                                                     // init in renewals channel
 if(slack.live === 'true'){
-    console.log('production run');
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
     console.log('starting ' + slack.name);
