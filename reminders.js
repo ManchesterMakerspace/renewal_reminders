@@ -131,7 +131,7 @@ var getMillis = {
     toTimeTomorrow: function(hour){
         var currentTime = new Date().getTime();         // current millis from epoch
         var tomorrowAtX = new Date();                   // create date object for tomorrow
-        tomorrowAtX.setDate(tomorrowAtX.getDate() + 1); // point date to tomorrow
+        // tomorrowAtX.setDate(tomorrowAtX.getDate() + 1); // point date to tomorrow
         tomorrowAtX.setHours(hour, 0, 0, 0);            // set hour to send tomorrow
         return tomorrowAtX.getTime() - currentTime;     // subtract tomo millis from epoch from current millis from epoch
     }
@@ -140,6 +140,7 @@ var getMillis = {
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
 slack.init();                                                     // init in renewals channel
 if(slack.live === 'true'){
+    console.log('production run');
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
     console.log('starting ' + slack.name);
