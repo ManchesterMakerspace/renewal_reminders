@@ -2,11 +2,11 @@
   "name": "renewal_reminders",
   "version": "1.0.0",
   "description": "System for checking if members in our database need to be renewed",
-  "main": "scheduled_check.js",
+  "main": "reminders.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start-prod":"pm2 start start.sh --name=\"renewal_reminders\"",
-    "start":"node scheduled_check.js"
+    "start":"node reminders.js"
   },
   "repository": {
     "type": "git",
