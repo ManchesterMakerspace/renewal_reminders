@@ -87,8 +87,7 @@ var check = {
         setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
-        if(memberDoc.groupName && !memberDoc.groupKeystone){return;} // skip group members
-        if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
+        if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;} // Skip over non members
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
         if(membersExpiration > currentTime){check.activeMembers++;}       // check and increment, if active member
@@ -100,11 +99,11 @@ var check = {
             msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
             msg += '\nThank You!,';
             msg += '\n' + slack.name;
-            slack.pm(memberDoc.slackHandle, msg);                    // private message member their expiration time
+            slack.pm(memberDoc.slackHandle, msg);                         // private message member their expiration time
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
-        setTimeout(check.memberCount, 10000); // onClose is just when the query is finished, not when the data has been processed
+        setTimeout(check.memberCount, 15000); // onClose is just when the query is finished, not when the data has been processed
     },
     memberCount: function(){
         slack.send('Just ran renewal reminders. Currently we have ' + check.activeMembers + ' active members');
