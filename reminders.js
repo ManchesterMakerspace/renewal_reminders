@@ -39,12 +39,12 @@ var slack = {
         if(slack.connected){ slack.io.emit('msg', msg);
         } else { console.log('404:'+msg); }
     },
-    pm: function(handle, msg){
+    dm: function(name, msg){
         if(slack.connected){
             if(slack.live === 'true'){   // given this is production, send the message for real
-                slack.io.emit('pm', {userhandle: handle, msg: msg});
+                slack.io.emit('dm', {name: name, msg: msg});
             } else {
-                slack.send('pm to ' + handle + ': ' + msg); // testing case
+                slack.send('dm to ' + handle + ': ' + msg); // testing case
             }
         } else { console.log('404:'+msg); }
     }
@@ -67,9 +67,6 @@ var mongo = { // depends on: mongoose
             groupSize: {type: Number},                                                // notes how many members in group given in one
             password: {type: String},                                                 // for admin cards only
             email: {type: String},                                                    // store email of member for prosterity sake
-            slackHandle: {type: String},                                              // store slack username
-            notificationAck: {type: Boolean},                                         // recognizes a notification was sent out
-            expiredAck: {type: Boolean}                                               // recognizes doorboto was updated with expiration
         }));
     }
 };
@@ -94,28 +91,16 @@ var check = {
         if(memberDoc.status === 'Revoked'){return;}                  // we don't care to see revoked members there date doesnt matter
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-
-        if(membersExpiration > currentTime){ check.activeMembers++; }     // check and increment, if active member
-
-        if(memberDoc.notificationAck){                                    // TODO this is too messy, needs to be cleaned up
-                                                                          // logic to remove ack needs to go into a renewal action
-        } else if(membersExpiration < (currentTime + TWO_WEEKS)){         // if no ack and with in two weeks of expiring
+        if(membersExpiration > currentTime){check.activeMembers++;}       // check and increment, if active member
+        if(membersExpiration > (currentTime + TWO_WEEKS) && membersExpiration < (currentTime + DAYS_13)){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
-            if(memberDoc.slackHandle){                                    // if handle is in member doc
-                var msg = 'Your membership expiration is:' + expiry;      // give member their expiration date
-                msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
-                msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
-                msg += '\nThank You!,';
-                msg += '\n' + slack.name;
-                slack.pm(memberDoc.slackHandle, msg);                    // private message member their expiration time
-            } else {
-                slack.send(memberDoc.fullname + ' needs to have their handle added to our db');
-            }
-            if(slack.live === 'true'){
-                memberDoc.notificationAck = true;                            // signals that reminder has been sent
-                memberDoc.save();                                            // does a intsert $set notificationAck = true
-            }
+            var msg = 'Your membership expiration is:' + expiry;          // give member their expiration date
+            msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
+            msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
+            msg += '\nThank You!,';
+            msg += '\n' + slack.name;
+            slack.pm(memberDoc.slackHandle, msg);                    // private message member their expiration time
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
