@@ -1,16 +1,16 @@
 // deploy.js  services that imediately deploys this service when it need to be updated
-var PATH = ' PATH=' + process.env.PATH + ' '; // assuming this is started manually, will help find node/npm, otherwise exact paths are needed
+var PATH = ' PATH=' + process.env.PATH + ' ';// assuming this is started manually, will help find node/npm, otherwise exact paths are needed
 
-var orcastrate = {
-    io: require('socket.io-client'),                          // to connect to our orcastrate intergration server
+var jitploy = {
+    io: require('socket.io-client'),                       // to connect to our jitploy intergration server
     init: function(server, token, repoName){
-        orcastrate.io = orcastrate.io(server);                // orcastrate socket server connection initiation
-        orcastrate.io.on('connect', function authenticate(){  // connect with orcastrator
-            orcastrate.io.emit('authenticate', {
+        jitploy.io = jitploy.io(server);                   // jitploy socket server connection initiation
+        jitploy.io.on('connect', function authenticate(){  // connect with orcastrator
+            jitploy.io.emit('authenticate', {
                 token: token,
                 name: repoName,
-            });                                               // its important lisner know that we are for real
-            orcastrate.io.on('deploy', run.deploy);           // respond to deploy events
+            });                                            // its important lisner know that we are for real
+            jitploy.io.on('deploy', run.deploy);           // respond to deploy events
         });
     }
 };
@@ -22,12 +22,13 @@ var config = {
     fs: require('fs'),
     options: {}, // ultimately config vars are stored here and past to program being tracked
     run: function(onFinsh){
-        var readFile = config.fs.createReadStream(__dirname + '/encrypted_' + config.env);
+        var readFile = config.fs.createReadStream('encrypted_' + config.env);
         var decrypt = config.crypto.createDecipher('aes-256-ctr', config.key);
-        var writeFile = config.fs.createWriteStream(__dirname + '/decrypted_' + config.env + '.js');
+        var writeFile = config.fs.createWriteStream('decrypted_' + config.env + '.js');
         readFile.pipe(decrypt).pipe(writeFile);
         writeFile.on('finish', function(){
-            config.options = {env: require(__dirname + '/decrypted_' + config.env + '.js')};
+            config.options = {env: require('./decrypted_' + config.env + '.js')};
+            console.log(JSON.stringify(config.options.env, null, 4));
             onFinsh(); // call next thing to do, prabably npm install
         });
 
@@ -59,7 +60,7 @@ var run = {
     },
     start: function(code){
         if(code){console.log('restart with code: ' + code);}
-        run.service = run.child.exec(PATH+'npm run start', config.options);
+        run.service = run.child.exec(PATH+'npm run start', config.options); // make sure service will run on npm run start
         run.service.stdout.on('data', function(data){console.log("" + data);});
         run.service.stderr.on('data', function(data){console.log("" + data);});
         run.service.on('close', run.start); // habituly try to restart process
@@ -67,5 +68,5 @@ var run = {
     }
 };
 
-// orcastrate.init(process.env.ORCASTRATE_SERVER, process.env.CONNECT_TOKEN, process.env.REPO_NAME);
+jitploy.init(process.env.JITPLOY_SERVER, process.env.CONNECT_TOKEN, process.env.REPO_NAME);
 run.deploy();

@@ -16,7 +16,7 @@ Edit the following command with the right env, token, and key and run it in bash
 
     touch kick_off_cd.sh && chmod +x kick_off_cd.sh && echo " #!/bin/bash
     export ENVIRONMENT="local"
-    export ORCASTRATE_SERVER="https://orcastrate.herokuapp.com/"
+    export JITPLOY_SERVER="https://jitploy.herokuapp.com/"
     export CONNECT_TOKEN=<TEST_TOKEN>
     export REPO_NAME="test_reminders" # will not auto deploy
     export CONFIG_KEY=<CONFIG_KEY_FOR_THIS_ENV>
