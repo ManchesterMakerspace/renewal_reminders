@@ -124,6 +124,7 @@ var getMillis = {
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
 slack.init();                                                     // init in renewals channel
 if(slack.live === 'true'){
+    console.log('making sure automatic deployment works');
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
     console.log('starting ' + slack.name);
