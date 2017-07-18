@@ -99,7 +99,7 @@ var check = {
             msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
             msg += '\nThank You!,';
             msg += '\n' + slack.name;
-            slack.pm(memberDoc.slackHandle, msg);                         // private message member their expiration time
+            slack.dm(memberDoc.slackHandle, msg);                         // private message member their expiration time
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
@@ -129,4 +129,4 @@ if(slack.live === 'true'){
     console.log('starting ' + slack.name);
     setTimeout(check.daily, 3000); // give it some time to connect to masterslacker
 }
-setTimeout(function(){slack.pm('paul_beaudet', 'yo reminders started');}, 10000);
+setTimeout(function(){slack.dm('paul_beaudet', 'yo reminders started');}, 10000);
