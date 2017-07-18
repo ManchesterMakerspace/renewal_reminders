@@ -129,4 +129,3 @@ if(slack.live === 'true'){
     console.log('starting ' + slack.name);
     setTimeout(check.daily, 3000); // give it some time to connect to masterslacker
 }
-setTimeout(function(){slack.dm('paul_beaudet', 'yo reminders started');}, 10000);
