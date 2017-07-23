@@ -1,10 +1,8 @@
 // scheduled_check.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 // millisecond conversions
-var TWO_WEEKS= 1209600000;
-var DAYS_13  = 1123200000;
-var ONE_WEEK = 604800000;
-var DAYS_6   = 518400000;
 var ONE_DAY  = 86400000;
+var DAYS_13 = 1123200000;
+var DAYS_14 = 1209600000;
 
 var slack = {
     io: require('socket.io-client'),                         // to connect to our slack intergration server
@@ -91,7 +89,7 @@ var check = {
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
         if(membersExpiration > currentTime){check.activeMembers++;}       // check and increment, if active member
-        if(membersExpiration > (currentTime + TWO_WEEKS) && membersExpiration < (currentTime + DAYS_13)){ // if no ack and with in two weeks of expiring
+        if(membersExpiration < (currentTime + DAYS_14) && membersExpiration > (currentTime + DAYS_13)){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
             var msg = 'Your membership expiration is:' + expiry;          // give member their expiration date
