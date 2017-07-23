@@ -46,7 +46,7 @@ var run = {
         });
     },
     install: function(){ // and probably restart when done
-        var npmInstall = run.child.exec(PATH+'npm install');
+        var npmInstall = run.child.exec('cd ' + __dirname + ' &&' + PATH + 'npm install');
         npmInstall.stdout.on('data', function(data){console.log("" + data);});
         npmInstall.stderr.on('data', function(data){console.log("" + data);});
         npmInstall.on('close', function doneInstall(code){
@@ -59,7 +59,7 @@ var run = {
     },
     start: function(code){
         if(code){console.log('restart with code: ' + code);}
-        run.service = run.child.exec(PATH+'npm run start', config.options); // make sure service will run on npm run start
+        run.service = run.child.exec('cd ' + __dirname + ' &&' + PATH + 'npm run start', config.options); // make sure service will run on npm run start
         run.service.stdout.on('data', function(data){console.log("" + data);});
         run.service.stderr.on('data', function(data){console.log("" + data);});
         run.service.on('close', run.start); // habituly try to restart process
