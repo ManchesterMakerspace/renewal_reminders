@@ -1,8 +1,9 @@
 // scheduled_check.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 // millisecond conversions
-var ONE_DAY  = 86400000;
-var DAYS_13 = 1123200000;
-var DAYS_14 = 1209600000;
+var ONE_DAY = 86400000;
+var DAYS_3  = ONE_DAY * 3;
+var DAYS_13 = ONE_DAY * 13;
+var DAYS_14 = ONE_DAY * 14;
 
 var slack = {
     io: require('socket.io-client'),                         // to connect to our slack intergration server
@@ -42,7 +43,7 @@ var slack = {
             if(slack.live === 'true'){   // given this is production, send the message for real
                 slack.io.emit('dm', {name: name, msg: msg});
             } else {
-                slack.send('dm to ' + handle + ': ' + msg); // testing case
+                slack.send('dm to ' + name + ': ' + msg); // testing case
             }
         } else { console.log('404:'+msg); }
     }
@@ -89,7 +90,13 @@ var check = {
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
         if(membersExpiration > currentTime){check.activeMembers++;}       // check and increment, if active member
-        if(membersExpiration < (currentTime + DAYS_14) && membersExpiration > (currentTime + DAYS_13)){ // if no ack and with in two weeks of expiring
+        if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
+            slack.send(memberDoc.fullname + ' just expired');
+        }
+        if(currentTime < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
+            slack.send(memberDoc.fullname + ' is expiring in the next couple of days');
+        }
+        if((currentTime + DAYS_13) < membersExpiration && (currentTime + DAYS_14) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
             var msg = 'Your membership expiration is:' + expiry;          // give member their expiration date
@@ -97,7 +104,7 @@ var check = {
             msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
             msg += '\nThank You!,';
             msg += '\n' + slack.name;
-            slack.dm(memberDoc.slackHandle, msg);                         // private message member their expiration time
+            slack.dm(memberDoc.fullname, msg);                            // private message member their expiration time
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important

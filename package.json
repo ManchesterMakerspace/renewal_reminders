@@ -5,8 +5,8 @@
   "main": "reminders.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start-prod":"pm2 start start.sh --name=\"renewal_reminders\"",
-    "start":"node reminders.js"
+    "start-prod": "pm2 start start.sh --name=renewal_reminders",
+    "start": "node reminders.js"
   },
   "repository": {
     "type": "git",
