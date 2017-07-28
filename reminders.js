@@ -111,7 +111,7 @@ var check = {
         setTimeout(check.memberCount, 15000); // onClose is just when the query is finished, not when the data has been processed
     },
     memberCount: function(){
-        slack.send('Just ran renewal reminders. Currently we have ' + check.activeMembers + ' active members');
+        slack.send('Ran renewal reminders. Currently we have ' + check.activeMembers + ' active members');
         check.activeMembers = 0;
     }
 };
