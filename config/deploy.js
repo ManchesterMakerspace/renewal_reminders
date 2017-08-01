@@ -20,14 +20,16 @@ var config = {
     key: process.env.CONFIG_KEY,
     crypto: require('crypto'),
     fs: require('fs'),
-    options: {}, // ultimately config vars are stored here and past to program being tracked
+    options: {
+        env: {}
+    }, // ultimately config vars are stored here and past to program being tracked
     run: function(onFinsh){
         var readFile = config.fs.createReadStream(__dirname + '/encrypted_' + config.env);
         var decrypt = config.crypto.createDecipher('aes-256-ctr', config.key);
         var writeFile = config.fs.createWriteStream(__dirname + '/decrypted_' + config.env + '.js');
         readFile.pipe(decrypt).pipe(writeFile);
         writeFile.on('finish', function(){
-            config.options = {env: require(__dirname + '/decrypted_' + config.env + '.js')};
+            config.options.env = require(__dirname + '/decrypted_' + config.env + '.js');
             onFinsh(); // call next thing to do, prabably npm install
         });
 
@@ -36,34 +38,37 @@ var config = {
 
 var run = {
     child: require('child_process'),
+    cmd: function(command, cmdName, onSuccess, onFail){
+        console.log('running command:' + command);
+        run[cmdName] = run.child.exec(command, config.options);
+        run[cmdName].stdout.on('data', function(data){console.log("" + data);});
+        run[cmdName].stderr.on('data', function(data){console.log("" + data);});
+        run[cmdName].on('close', function doneCommand(code){
+            if(code){onFail(code);}
+            else {onSuccess();}
+        });
+        run[cmdName].on('error', function(error){console.log('child exec error: ' + error);});
+    },
     deploy: function(){ // or at least start to
-        var gitPull = run.child.exec('git pull');
-        gitPull.stdout.on('data', function(data){console.log("" + data);});
-        gitPull.stderr.on('data', function(data){console.log("" + data);});
-        gitPull.on('close', function donePull(code){
-            if(code){console.log('no pull? ' + code);}
-            else {config.run(run.install);} // decrypt configuration then install
+        run.cmd('git pull', 'gitPull', function pullSuccess(){
+            config.run(run.install); // decrypt configuration then install
+        }, function pullFail(code){
+            console.log('no pull? ' + code);
         });
     },
     install: function(){ // and probably restart when done
-        var npmInstall = run.child.exec('cd ' + __dirname + ' &&' + PATH + 'npm install');
-        npmInstall.stdout.on('data', function(data){console.log("" + data);});
-        npmInstall.stderr.on('data', function(data){console.log("" + data);});
-        npmInstall.on('close', function doneInstall(code){
-            if(code){console.log('bad install? ' + code);}
-            else {
-                if(run.service){run.service.kill();} // send kill signal to current process then start it again
-                else           {run.start();}        // if its not already start service up
-            }
+        run.cmd('cd ' + __dirname + ' &&' + PATH + 'npm install', 'npmInstall', function installSuccess(){
+            run.start(run.service); // if its not already, start service up
+        }, function installFail(code){
+            console.log('bad install? ' + code);
         });
     },
     start: function(code){
-        if(code){console.log('restart with code: ' + code);}
-        run.service = run.child.exec('cd ' + __dirname + ' &&' + PATH + 'npm run start', config.options); // make sure service will run on npm run start
-        run.service.stdout.on('data', function(data){console.log("" + data);});
-        run.service.stderr.on('data', function(data){console.log("" + data);});
-        run.service.on('close', run.start); // habituly try to restart process
-        run.service.on('error', function(error){console.log('child exec error: ' + error);});
+        if(code){               // anything besides 0 is a case where we need to restart
+            run.service.kill(); // send kill signal to current process then start it again
+            console.log('restart with code: ' + code);
+        }
+        run.cmd('cd ' + __dirname + ' &&' + PATH + 'npm run start', 'service', run.start, run.start);
     }
 };
 
