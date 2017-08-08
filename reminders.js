@@ -95,6 +95,12 @@ var check = {
         }
         if(currentTime < membersExpiration && (currentTime + ONE_DAY) > membersExpiration){ // is member in date? if a day was added to today would they expire?
             slack.send(memberDoc.fullname + ' is expiring today');
+            var msg = 'Your membership is expiring today';
+            msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
+            msg += '\nif you are on subscription, we will manually update your card/fob, when we get your payment';
+            msg += '\nThank You!,';
+            msg += '\n' + slack.name;
+            slack.dm(memberDoc.fullname, msg);                            // private message member their expiration time
         }
         if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
             slack.send(memberDoc.fullname + ' is expiring in the next couple of days');     // if added a day to three days would member expire?
@@ -104,7 +110,7 @@ var check = {
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
             var msg = 'Your membership expiration is:' + expiry;          // give member their expiration date
             msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
-            msg += '\nif you are on subscription, No worries we will update your manually update your card/fob, when we get your payment';
+            msg += '\nif you are on subscription, No worries we will manually update your card/fob, when we get your payment';
             msg += '\nThank You!,';
             msg += '\n' + slack.name;
             slack.dm(memberDoc.fullname, msg);                            // private message member their expiration time
