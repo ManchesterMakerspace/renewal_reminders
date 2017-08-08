@@ -86,15 +86,18 @@ var check = {
         setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
-        if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;} // Skip over non members
+        if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var currentTime = new Date().getTime();
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
-        if(membersExpiration > currentTime){check.activeMembers++;}       // check and increment, if active member
+        if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             slack.send(memberDoc.fullname + ' just expired');
         }
-        if(currentTime < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
-            slack.send(memberDoc.fullname + ' is expiring in the next couple of days');
+        if(currentTime < membersExpiration && (currentTime + ONE_DAY) > membersExpiration){ // is member in date? if a day was added to today would they expire?
+            slack.send(memberDoc.fullname + ' is expiring today');
+        }
+        if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
+            slack.send(memberDoc.fullname + ' is expiring in the next couple of days');     // if added a day to three days would member expire?
         }
         if((currentTime + DAYS_13) < membersExpiration && (currentTime + DAYS_14) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
