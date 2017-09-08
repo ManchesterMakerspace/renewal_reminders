@@ -2,6 +2,8 @@
 // millisecond conversions
 var ONE_DAY = 86400000;
 var DAYS_3  = ONE_DAY * 3;
+var DAYS_6 = ONE_DAY * 6;
+var DAYS_7 = ONE_DAY * 7;
 var DAYS_13 = ONE_DAY * 13;
 var DAYS_14 = ONE_DAY * 14;
 
@@ -38,13 +40,8 @@ var slack = {
         if(slack.connected){ slack.io.emit('msg', msg);
         } else { console.log('404:'+msg); }
     },
-    dm: function(name, msg){
-        if(slack.connected){
-            if(slack.live === 'true'){   // given this is production, send the message for real
-                slack.io.emit('dm', {name: name, msg: msg});
-            } else {
-                slack.send('dm to ' + name + ': ' + msg); // testing case
-            }
+    remind: function(msg){ // sends a message to renewal_reminders channel along with standard message to renewals
+        if(slack.connected){ slack.io.emit('channelMsg', {msg: msg, channel: 'renewal_reminders'});
         } else { console.log('404:'+msg); }
     }
 };
@@ -92,35 +89,29 @@ var check = {
         if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             slack.send(memberDoc.fullname + ' just expired');
+            slack.remind(memberDoc.fullname + ' just expired');
         }
         if(currentTime < membersExpiration && (currentTime + ONE_DAY) > membersExpiration){ // is member in date? if a day was added to today would they expire?
             slack.send(memberDoc.fullname + ' is expiring today');
-            var msg = 'Your membership is expiring today';
-            msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
-            msg += '\nif you are on subscription, we will manually update your card/fob, when we get your payment';
-            msg += '\nThank You!,';
-            msg += '\n' + slack.name;
-            slack.dm(memberDoc.fullname, msg);                            // private message member their expiration time
+            slack.remind(memberDoc.fullname + ' is expiring today');
+
         }
         if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
             slack.send(memberDoc.fullname + ' is expiring in the next couple of days');     // if added a day to three days would member expire?
+            slack.remind(memberDoc.fullname + ' is expiring in the next couple of days');
         }
-        if((currentTime + DAYS_13) < membersExpiration && (currentTime + DAYS_14) > membersExpiration){ // if no ack and with in two weeks of expiring
+        if((currentTime + DAYS_6) < membersExpiration && (currentTime + DAYS_7) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
-            var msg = 'Your membership expiration is:' + expiry;          // give member their expiration date
-            msg += '\nyou can renew on our site: http://manchestermakerspace.org/join_now/';
-            msg += '\nif you are on subscription, No worries we will manually update your card/fob, when we get your payment';
-            msg += '\nThank You!,';
-            msg += '\n' + slack.name;
-            slack.dm(memberDoc.fullname, msg);                            // private message member their expiration time
+            slack.remind(memberDoc.fullname + " will expire on " + expiry);
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
         setTimeout(check.memberCount, 15000); // onClose is just when the query is finished, not when the data has been processed
     },
     memberCount: function(){
-        slack.send('Ran renewal reminders. Currently we have ' + check.activeMembers + ' active members');
+        slack.send('Currently we have ' + check.activeMembers + ' active members');
+        slack.remind('Currently we have ' + check.activeMembers + ' active members');
         check.activeMembers = 0;
     }
 };
