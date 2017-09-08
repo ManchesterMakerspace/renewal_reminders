@@ -55,7 +55,7 @@ var mongo = { // depends on: mongoose
             id: ObjectId,                                                             // unique id of document
             fullname: { type: String, required: '{PATH} is required', unique: true }, // full name of user
             cardID: { type: String, required: '{PATH} is required', unique: true },   // user card id
-            status: {type: String, Required: '{PATH} is required'},                   // type of account, admin, mod, ect
+            status: {type: String, required: '{PATH} is required'},                   // type of account, admin, mod, ect
             accesspoints: [String],                                                   // points of access member (door, machine, ect)
             expirationTime: {type: Number},                                           // pre-calculated time of expiration
             groupName: {type: String},                                                // potentially member is in a group/partner membership
