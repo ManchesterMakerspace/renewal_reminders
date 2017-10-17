@@ -39,10 +39,6 @@ var slack = {
     send: function(msg){
         if(slack.connected){ slack.io.emit('msg', msg);
         } else { console.log('404:'+msg); }
-    },
-    remind: function(msg){ // sends a message to renewal_reminders channel along with standard message to renewals
-        if(slack.connected){ slack.io.emit('channelMsg', {msg: msg, channel: 'renewal_reminders'});
-        } else { console.log('404:'+msg); }
     }
 };
 
@@ -89,21 +85,17 @@ var check = {
         if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             slack.send(memberDoc.fullname + ' just expired');
-            slack.remind(memberDoc.fullname + ' just expired');
         }
         if(currentTime < membersExpiration && (currentTime + ONE_DAY) > membersExpiration){ // is member in date? if a day was added to today would they expire?
             slack.send(memberDoc.fullname + ' is expiring today');
-            slack.remind(memberDoc.fullname + ' is expiring today');
 
         }
         if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
             slack.send(memberDoc.fullname + ' is expiring in the next couple of days');     // if added a day to three days would member expire?
-            slack.remind(memberDoc.fullname + ' is expiring in the next couple of days');
         }
         if((currentTime + DAYS_6) < membersExpiration && (currentTime + DAYS_7) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
-            slack.remind(memberDoc.fullname + " will expire on " + expiry);
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
@@ -111,7 +103,6 @@ var check = {
     },
     memberCount: function(){
         slack.send('Currently we have ' + check.activeMembers + ' active members');
-        slack.remind('Currently we have ' + check.activeMembers + ' active members');
         check.activeMembers = 0;
     }
 };
