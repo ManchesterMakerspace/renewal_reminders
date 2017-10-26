@@ -84,18 +84,21 @@ var check = {
         var membersExpiration = new Date(memberDoc.expirationTime).getTime();
         if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
-            slack.send(memberDoc.fullname + ' just expired');
+            if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + ' just expired');}
+            else{slack.send(memberDoc.fullname + ' just expired');}
         }
         if(currentTime < membersExpiration && (currentTime + ONE_DAY) > membersExpiration){ // is member in date? if a day was added to today would they expire?
-            slack.send(memberDoc.fullname + ' is expiring today');
-
+            if(memberDoc.subscription){}
+            else{slack.send(memberDoc.fullname + ' is expiring today');}
         }
         if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
-            slack.send(memberDoc.fullname + ' is expiring in the next couple of days');     // if added a day to three days would member expire?
+            if(memberDoc.subscription){}
+            {slack.send(memberDoc.fullname + ' is expiring in the next couple of days');}    // if added a day to three days would member expire?
         }
         if((currentTime + DAYS_6) < membersExpiration && (currentTime + DAYS_7) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
-            slack.send(memberDoc.fullname + " will expire on " + expiry); // Notify comming expiration to renewal channel
+            if(memberDoc.subscription){}
+            else{slack.send(memberDoc.fullname + " will expire on " + expiry);} // Notify comming expiration to renewal channel
         }
     },
     onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
