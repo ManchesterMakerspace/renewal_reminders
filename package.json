@@ -21,7 +21,7 @@
   "private": true,
   "dependencies": {
     "@slack/client": "^3.14.1",
-    "mongoose": "^4.4.19"
+    "mongodb": "^2.2.33"
   },
   "engines": {
     "node": "4.2.4",

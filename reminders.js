@@ -22,42 +22,50 @@ var slack = {
     }
 };
 
-var mongo = { // depends on: mongoose
-    ose: require('mongoose'),
-    init: function(db_uri){
-        mongo.ose.connect(db_uri);                                                    // connect to our database
-        var Schema = mongo.ose.Schema; var ObjectId = Schema.ObjectId;
-        mongo.member = mongo.ose.model('member', new Schema({                         // create user object property
-            id: ObjectId,                                                             // unique id of document
-            fullname: { type: String, required: '{PATH} is required', unique: true }, // full name of user
-            cardID: { type: String, required: '{PATH} is required', unique: true },   // user card id
-            status: {type: String, required: '{PATH} is required'},                   // type of account, admin, mod, ect
-            accesspoints: [String],                                                   // points of access member (door, machine, ect)
-            expirationTime: {type: Number},                                           // pre-calculated time of expiration
-            groupName: {type: String},                                                // potentially member is in a group/partner membership
-            groupKeystone: {type: Boolean},                                           // notes who holds expiration date for group
-            groupSize: {type: Number},                                                // notes how many members in group given in one
-            password: {type: String},                                                 // for admin cards only
-            email: {type: String},                                                    // store email of member for prosterity sake
-        }));
+var mongo = {
+    URI: process.env.MONGODB_URI,
+    client: require('mongodb').MongoClient,
+    connectAndDo: function(connected, failed){         // url to db and what well call this db in case we want multiple
+        mongo.client.connect(mongo.URI, function onConnect(error, db){
+            if(db){connected(db);} // passes database object so databasy things can happen
+            else  {failed(error);} // what to do when your reason for existence is a lie
+        });
     }
 };
 
 var check = {
     activeMembers: 0,
-    now: function(parsingFunction){       // pass a function to iterate over a generic mongo stream
-        var cursor = mongo.member.find({}).cursor();
-        cursor.on('data', parsingFunction);
-        cursor.on('close', check.onClose);
-    },
-    daily: function(){
-        check.now(check.upcomming);              // stream results to slack
+    daily: function(parsingFunction){                           // intiates an information stream that is called daily
+        mongo.connectAndDo(function onconnect(db){
+            check.stream(db.collection('members').find({}), db); // pass cursor from query and db objects to start a stream
+        }, function onError(error){                             // doubt this will happen but Murphy
+            slack.send('could not connect to database for whatever reason, see logs');
+            console.log('connect error ' + error);
+        });
         setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
+    },
+    stream: function(cursor, db){ //
+        process.nextTick(function onNextTick(){
+            cursor.nextObject(function onMember(error, member){
+                if(member){
+                    check.upcomming(member);
+                    check.stream(cursor, db);  // recursively move through all members in collection
+                } else {
+                    if(error){
+                        slack.send('Error checking database, see logs');
+                        console.log('on check: ' + error);
+                    } else {        // given we have got to end of stream, list currently active members
+                        setTimeout(check.memberCount, 4000);
+                        db.close(); // close connection with database
+                    }
+                }
+            });
+        });
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var currentTime = new Date().getTime();
-        var membersExpiration = new Date(memberDoc.expirationTime).getTime();
+        var membersExpiration = Number(memberDoc.expirationTime);
         if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + ' just expired');}
@@ -77,13 +85,10 @@ var check = {
             else{slack.send(memberDoc.fullname + " will expire on " + expiry);} // Notify comming expiration to renewal channel
         }
     },
-    onClose: function(){ // not sure how this could be helpfull but it is a streaming event type, maybe I'm missing something important
-        setTimeout(check.memberCount, 15000); // onClose is just when the query is finished, not when the data has been processed
-    },
     memberCount: function(){
         slack.send('Currently we have ' + check.activeMembers + ' active members');
         check.activeMembers = 0;
-    }
+    },
 };
 
 var getMillis = {
@@ -96,10 +101,9 @@ var getMillis = {
     }
 };
 
-mongo.init(process.env.MONGODB_URI);                              // connect to our database
 if(slack.live === 'true'){
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
-    console.log('starting renewal reminders');
-    setTimeout(check.daily, 3000); // give it some time to connect to masterslacker
+    console.log('Testing renewal reminders');
+    check.daily();
 }
