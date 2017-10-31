@@ -8,37 +8,17 @@ var DAYS_13 = ONE_DAY * 13;
 var DAYS_14 = ONE_DAY * 14;
 
 var slack = {
-    io: require('socket.io-client'),                         // to connect to our slack intergration server
-    firstConnect: false,
-    connected: false,
-    name: process.env.TRUSTED_NAME,
-    live: process.env.LIVE, // not set in any env besides prod
-    init: function(){
-        try {
-            slack.io = slack.io(process.env.MASTER_SLACKER); // slack https server
-            slack.firstConnect = true;
-        } catch (error){
-            console.log('could not connect to ' + process.env.MASTER_SLACKER + ' cause:' + error);
-            setTimeout(slack.init, 60000); // try again in a minute maybe we are disconnected from the network
-        }
-        if(slack.firstConnect){
-            slack.io.on('connect', function authenticate(){  // connect with masterslacker
-                slack.io.emit('authenticate', {
-                    token: process.env.CONNECT_TOKEN,
-                    slack: {
-                        username: slack.name,
-                        channel: process.env.SLACK_CHANNEL,
-                        iconEmoji: ':key:'
-                    }
-                }); // its important lisner know that we are for real
-                slack.connected = true;
-            });
-            slack.io.on('disconnect', function disconnected(){slack.connected = false;});
-        }
-    },
+    webhook: require('@slack/client').IncomingWebhook,   // url to slack intergration called "webhook" can post to any channel as a "bot"
+    URL: process.env.SLACK_WEBHOOK_URL,
+    live: process.env.LIVE,
     send: function(msg){
-        if(slack.connected){ slack.io.emit('msg', msg);
-        } else { console.log('404:'+msg); }
+        properties = {
+            username: 'Renewal Bot',
+            channel: slack.live === 'true' ? 'renewal_reminders' : 'test_channel', // if not live send all messages to test channel
+            iconEmoji: ':key:'
+        };
+        var sendObj = new slack.webhook(slack.URL, properties);
+        sendObj.send(msg);
     }
 };
 
@@ -71,11 +51,7 @@ var check = {
         cursor.on('close', check.onClose);
     },
     daily: function(){
-        if(slack.connected){                         // if we are not connected to our slack server don't bother
-            check.now(check.upcomming);              // stream results to slack
-        } else {
-            console.log('was not connected to slack on: ' + new Date().toDateString());
-        }
+        check.now(check.upcomming);              // stream results to slack
         setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
@@ -121,10 +97,9 @@ var getMillis = {
 };
 
 mongo.init(process.env.MONGODB_URI);                              // connect to our database
-slack.init();                                                     // init in renewals channel
 if(slack.live === 'true'){
-    setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedual checks daily for warnigs at x hour from here after
+    setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
-    console.log('starting ' + slack.name);
+    console.log('starting renewal reminders');
     setTimeout(check.daily, 3000); // give it some time to connect to masterslacker
 }

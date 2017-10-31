@@ -20,8 +20,8 @@
   "homepage": "https://github.com/ManchesterMakerspace/RenewalReminders#readme",
   "private": true,
   "dependencies": {
-    "mongoose": "^4.4.19",
-    "socket.io-client": "^1.7.3"
+    "@slack/client": "^3.14.1",
+    "mongoose": "^4.4.19"
   },
   "engines": {
     "node": "4.2.4",
