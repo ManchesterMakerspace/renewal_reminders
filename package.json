@@ -4,8 +4,8 @@
   "description": "System for checking if members in our database need to be renewed",
   "main": "reminders.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start-prod": "pm2 start start.sh --name=reminders",
+    "postversion": "git push",
+    "start-prod": "npm install -g jitploy && jitploy -k \"prodConfigkey\" -t \"prodToken\" -r \"reminders\" reminders.js",
     "start": "node reminders.js"
   },
   "repository": {
