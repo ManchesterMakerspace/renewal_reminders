@@ -15,7 +15,7 @@ var slack = {
         properties = {
             username: 'Renewal Bot',
             channel: slack.live === 'true' ? 'membership' : 'master_slacker', // if not live send all messages to test channel
-            iconEmoji: ':key:'
+            iconEmoji: ':reminder_ribbon:'
         };
         var sendObj = new slack.webhook(slack.URL, properties);
         sendObj.send(msg);
