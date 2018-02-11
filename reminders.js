@@ -102,8 +102,6 @@ var getMillis = {
 };
 
 if(slack.live === 'true'){
-    console.log('Setting timeout for next check and running a check');
-    check.daily();
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
     console.log('Testing renewal reminders');
