@@ -5,7 +5,7 @@
   "main": "reminders.js",
   "scripts": {
     "postversion": "git push",
-    "start-prod": "npm install -g jitploy && jitploy -k \"prodConfigkey\" -t \"prodToken\" -r \"reminders\" reminders.js",
+    "start-prod": "npm install -g jitploy && jitploy -k \"prodConfigkey\" -t \"prodToken\" -r \"renewal_reminders\" -e \"prod\" reminders.js",
     "start": "node reminders.js"
   },
   "repository": {
