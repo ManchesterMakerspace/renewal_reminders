@@ -107,3 +107,5 @@ if(slack.live === 'true'){
     console.log('Testing renewal reminders');
     check.daily();
 }
+var pkgjson = require('./package.json');
+console.log('Starting ' + pkgjson.name + ' version ' + pkgjson.version); // show version of package when restarted
