@@ -1,6 +1,6 @@
 {
   "name": "renewal_reminders",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "System for checking if members in our database need to be renewed",
   "main": "reminders.js",
   "scripts": {
