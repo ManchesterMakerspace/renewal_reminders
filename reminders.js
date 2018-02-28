@@ -77,7 +77,7 @@ var check = {
         }
         if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
             if(memberDoc.subscription){}
-            {slack.send(memberDoc.fullname + ' is expiring in the next couple of days');}    // if added a day to three days would member expire?
+            else{slack.send(memberDoc.fullname + ' is expiring in the next couple of days');} // if added a day to three days would member expire?
         }
         if((currentTime + DAYS_6) < membersExpiration && (currentTime + DAYS_7) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
