@@ -1,0 +1,8 @@
+# Add properties to this module in order set configuration for sample environment
+{
+    JITPLOY_SHARED_KEY: 'IMtHB2sMGCoDHjBMq5LmTQ==BHBUYyEjB0Q312Ca49pPdQ==', # Shared key for remote target enviroment, encrypts this file if not demo
+    MONGODB_URI: 'localhost:27017',                                         # Database to connect to, this assumes you set one up
+    SLACK_WEBHOOK_URL: "since this is wrong it should just log",            # You can get this from slack when webhooks are enabled
+    LIVE: "false",                                                          # Yes... string "false" or "true" js booleans get turned in to strings as env vars
+    HOUR_TO_SEND: 11                                                        # Hour script will run
+}

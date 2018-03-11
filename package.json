@@ -5,8 +5,8 @@
   "main": "reminders.js",
   "scripts": {
     "postversion": "git push",
-    "start-prod": "npm install -g jitploy && jitploy -k \"prodConfigkey\" -t \"prodToken\" -r \"renewal_reminders\" -e \"prod\" reminders.js",
-    "start": "node reminders.js"
+    "start": "node reminders.js",
+    "setup": "npm install pm2 jitploy && git clone https://github.com/ManchesterMakerspace/renewal_reminders.git"
   },
   "repository": {
     "type": "git",
