@@ -9,16 +9,28 @@ var DAYS_14 = ONE_DAY * 14;
 
 var slack = {
     webhook: require('@slack/client').IncomingWebhook,   // url to slack intergration called "webhook" can post to any channel as a "bot"
-    URL: process.env.SLACK_WEBHOOK_URL,
-    live: process.env.LIVE,
-    send: function(msg){
-        properties = {
-            username: 'Renewal Bot',
-            channel: slack.live === 'true' ? 'membership' : 'master_slacker', // if not live send all messages to test channel
-            iconEmoji: ':reminder_ribbon:'
+    init: function(webhook, membersChannel, metricChannel){
+        slack.membersChannel = {
+            username: 'Reminder Bot',
+            channel: membersChannel,
+            iconEmoji: ':reminder_ribbon'
         };
-        var sendObj = new slack.webhook(slack.URL, properties);
-        sendObj.send(msg);
+        slack.metricChannel = {
+            username: 'Membership Stats',
+            channel: metricChannel,
+            iconEmoji: ':mag:'
+        };
+        slack.URL = webhook;
+    },
+    send: function(msg, useMetric){
+        if(slack.URL === "false"){   // not a valid url
+            console.log(msg);        // log messages if no webhook was given
+        } else {
+            var sendObj = {};
+            if(useMetric){sendObj = new slack.webhook(slack.URL, slack.metricChannel);}
+            else         {sendObj = new slack.webhook(slack.URL, slack.membersChannel);} // default to just outputting to membership channel
+            sendObj.send(msg);
+        }
     }
 };
 
@@ -86,7 +98,7 @@ var check = {
         }
     },
     memberCount: function(){
-        slack.send('Currently we have ' + check.activeMembers + ' active members');
+        slack.send('Currently we have ' + check.activeMembers + ' active members', true);
         check.activeMembers = 0;
     },
 };
@@ -101,7 +113,8 @@ var getMillis = {
     }
 };
 
-if(slack.live === 'true'){
+slack.init(process.env.SLACK_WEBHOOK_URL, process.env.MEMBERS_CHANNEL, process.env.METRICS_CHANNEL);
+if(process.env.LIVE === 'true'){
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
 } else {                                                          // testing route
     console.log('Testing renewal reminders');
