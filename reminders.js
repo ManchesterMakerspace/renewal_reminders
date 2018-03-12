@@ -13,7 +13,7 @@ var slack = {
         slack.membersChannel = {
             username: 'Reminder Bot',
             channel: membersChannel,
-            iconEmoji: ':reminder_ribbon'
+            iconEmoji: ':reminder_ribbon:'
         };
         slack.metricChannel = {
             username: 'Membership Stats',
@@ -98,7 +98,7 @@ var check = {
         }
     },
     memberCount: function(){
-        slack.send('Currently we have ' + check.activeMembers + ' active members', true);
+        slack.send('Currently we have ' + check.activeMembers + ' active members');
         check.activeMembers = 0;
     },
 };
