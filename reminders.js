@@ -47,16 +47,19 @@ var mongo = {
 
 var check = {
     activeMembers: 0,
-    daily: function(parsingFunction){                           // intiates an information stream that is called daily
+    now: function(){
         mongo.connectAndDo(function onconnect(db){
             check.stream(db.collection('members').find({}), db); // pass cursor from query and db objects to start a stream
-        }, function onError(error){                             // doubt this will happen but Murphy
+        }, function onError(error){                              // doubt this will happen but Murphy
             slack.send('could not connect to database for whatever reason, see logs');
             console.log('connect error ' + error);
         });
-        setTimeout(check.daily, ONE_DAY);        // make upcomming expiration check every interval
     },
-    stream: function(cursor, db){ //
+    daily: function(){                                           // intiates an information stream that is called daily
+        check.now();
+        setTimeout(check.daily, ONE_DAY);                        // make upcomming expiration check every interval
+    },
+    stream: function(cursor, db){
         process.nextTick(function onNextTick(){
             cursor.nextObject(function onMember(error, member){
                 if(member){
@@ -114,11 +117,10 @@ var getMillis = {
 };
 
 slack.init(process.env.SLACK_WEBHOOK_URL, process.env.MEMBERS_CHANNEL, process.env.METRICS_CHANNEL);
-if(process.env.LIVE === 'true'){
+if(process.env.ONE_OFF === 'true'){
+    check.now();
+} else {
     setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
-} else {                                                          // testing route
-    console.log('Testing renewal reminders');
-    check.daily();
 }
 var pkgjson = require('./package.json');
 console.log('Starting ' + pkgjson.name + ' version ' + pkgjson.version); // show version of package when restarted
