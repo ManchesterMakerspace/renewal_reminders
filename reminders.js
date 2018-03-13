@@ -118,12 +118,12 @@ var getMillis = {
 
 function startup(event, context){
     slack.init(process.env.SLACK_WEBHOOK_URL, process.env.MEMBERS_CHANNEL, process.env.METRICS_CHANNEL);
-    if(process.env.ONE_OFF === 'true'){
+    if(process.env.ONE_OFF === 'true'){                                              // Case that of just testing things out or running as a lambda function
         check.now();
-    } else {
+    } else {                                                                         // Case of run as a self contained cron with pm2/jitploy
         setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
         var pkgjson = require('./package.json');
-        console.log('Starting ' + pkgjson.name + ' version ' + pkgjson.version); // show version of package when restarted
+        console.log('Starting ' + pkgjson.name + ' version ' + pkgjson.version);     // show version of package when restarted
     }
 }
 
