@@ -122,9 +122,9 @@ function startup(event, context){
         check.now();
     } else {
         setTimeout(check.daily, getMillis.toTimeTomorrow(process.env.HOUR_TO_SEND)); // schedule checks daily for warnigs at x hour from here after
+        var pkgjson = require('./package.json');
         console.log('Starting ' + pkgjson.name + ' version ' + pkgjson.version); // show version of package when restarted
     }
-    var pkgjson = require('./package.json');
 }
 
 if(process.env.LAMBDA === 'true'){exports.start = startup;}
