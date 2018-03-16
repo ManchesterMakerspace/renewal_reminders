@@ -117,7 +117,9 @@ var getMillis = {
 };
 
 function startup(event, context){
-    slack.init(process.env.SLACK_WEBHOOK_URL, process.env.MEMBERS_CHANNEL, process.env.METRICS_CHANNEL);
+    var metricsChannel = event && event.METRICS_CHANNEL ? event.METRICS_CHANNEL : process.env.METRICS_CHANNEL; // if lambda passes something use it
+    var membersChannel = event && event.MEMBERS_CHANNEL ? event.MEMBERS_CHANNEL : process.env.MEMBERS_CHANNEL; // Otherwise use env vars
+    slack.init(process.env.SLACK_WEBHOOK_URL, membersChannel, metricsChannel);
     if(process.env.ONE_OFF === 'true'){                                              // Case that of just testing things out or running as a lambda function
         check.now();
     } else {                                                                         // Case of run as a self contained cron with pm2/jitploy
