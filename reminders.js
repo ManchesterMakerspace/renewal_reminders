@@ -83,21 +83,21 @@ var check = {
         var membersExpiration = Number(memberDoc.expirationTime);
         if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
-            if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + ' just expired');}
-            else{slack.send(memberDoc.fullname + ' just expired');}
+            if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + '\'s key has expired');}
+            else{slack.send(memberDoc.fullname + '\'s key has expired');}
         }
         if(currentTime < membersExpiration && (currentTime + ONE_DAY) > membersExpiration){ // is member in date? if a day was added to today would they expire?
             if(memberDoc.subscription){}
-            else{slack.send(memberDoc.fullname + ' is expiring today');}
+            else{slack.send(memberDoc.fullname + '\'s key is expiring today');}
         }
         if((currentTime + ONE_DAY) < membersExpiration && (currentTime + DAYS_3) > membersExpiration){
             if(memberDoc.subscription){}
-            else{slack.send(memberDoc.fullname + ' is expiring in the next couple of days');} // if added a day to three days would member expire?
+            else{slack.send(memberDoc.fullname + ' needs to renew in the next couple of days');} // if added a day to three days would member expire?
         }
         if((currentTime + DAYS_6) < membersExpiration && (currentTime + DAYS_7) > membersExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             if(memberDoc.subscription){}
-            else{slack.send(memberDoc.fullname + " will expire on " + expiry);} // Notify comming expiration to renewal channel
+            else{slack.send(memberDoc.fullname + " needs to renew by " + expiry);} // Notify comming expiration to renewal channel
         }
     },
     memberCount: function(){
