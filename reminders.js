@@ -84,7 +84,7 @@ var check = {
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var date = new Date(); var currentTime = date.getTime();
-        date.setDate(1); var beginingOfMonth = date.setHours(0, 0, 0, 0);
+        date.setDate(1); var beginingOfMonth = date.setHours(5, 0, 0, 0);
         var membersExpiration = Number(memberDoc.expirationTime);
         var memberStart = Number(memberDoc.startTime);
         if(membersExpiration > currentTime){
@@ -95,7 +95,7 @@ var check = {
                 if(memberStart > beginingOfMonth && memberStart < currentTime){check.aquisitions++;}
             }
         } else {
-            if(!memberDoc.groupName && membersExpiration > beginingOfMonth && membersExpiration < currentTime){check.losses++;}
+            if(!memberDoc.groupName && membersExpiration > beginingOfMonth){check.losses++;}
         }
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + '\'s key has expired');}
