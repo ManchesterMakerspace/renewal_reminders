@@ -49,6 +49,8 @@ var check = {
     activeMembers: 0,
     paidRetention: 0,
     activeGroupMembers: 0,
+    aquisitions: 0,
+    losses: 0,
     now: function(){
         mongo.connectAndDo(function onconnect(db){
             check.stream(db.collection('members').find({}), db); // pass cursor from query and db objects to start a stream
@@ -81,13 +83,20 @@ var check = {
     },
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
-        var currentTime = new Date().getTime();
+        var date = new Date(); var currentTime = date.getTime();
+        date.setDate(1); var beginingOfMonth = date.setHours(0, 0, 0, 0);
         var membersExpiration = Number(memberDoc.expirationTime);
+        var memberStart = Number(memberDoc.startTime);
         if(membersExpiration > currentTime){
-            check.activeMembers++;
+            check.activeMembers++;               // check and increment, if active member
             if(memberDoc.groupName){check.activeGroupMembers++;}
-            else{check.paidRetention++;}
-        }                         // check and increment, if active member
+            else {
+                check.paidRetention++;
+                if(memberStart > beginingOfMonth && memberStart < currentTime){check.aquisitions++;}
+            }
+        } else {
+            if(!memberDoc.groupName && membersExpiration > beginingOfMonth && membersExpiration < currentTime){check.losses++;}
+        }
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + '\'s key has expired');}
             else{slack.send(memberDoc.fullname + '\'s key has expired');}
@@ -109,6 +118,7 @@ var check = {
     memberCount: function(){
         slack.send('Currently we have ' + check.activeMembers + ' active members');
         slack.send('We have ' + check.paidRetention + ' individual members and ' + check.activeGroupMembers + ' group members', true);
+        slack.send('Since the begining of the month we gained ' + check.aquisitions + ' and lost ' + check.losses + ' individual members', true);
         check.activeMembers = 0;
         check.paidRetention = 0;
         check.activeGroupMembers = 0;
