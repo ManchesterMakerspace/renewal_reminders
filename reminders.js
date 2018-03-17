@@ -47,6 +47,8 @@ var mongo = {
 
 var check = {
     activeMembers: 0,
+    paidRetention: 0,
+    activeGroupMembers: 0,
     now: function(){
         mongo.connectAndDo(function onconnect(db){
             check.stream(db.collection('members').find({}), db); // pass cursor from query and db objects to start a stream
@@ -81,7 +83,11 @@ var check = {
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var currentTime = new Date().getTime();
         var membersExpiration = Number(memberDoc.expirationTime);
-        if(membersExpiration > currentTime){check.activeMembers++;}                         // check and increment, if active member
+        if(membersExpiration > currentTime){
+            check.activeMembers++;
+            if(memberDoc.groupName){check.activeGroupMembers++;}
+            else{check.paidRetention++;}
+        }                         // check and increment, if active member
         if((currentTime - ONE_DAY) < membersExpiration && currentTime > membersExpiration){
             if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + '\'s key has expired');}
             else{slack.send(memberDoc.fullname + '\'s key has expired');}
@@ -102,7 +108,10 @@ var check = {
     },
     memberCount: function(){
         slack.send('Currently we have ' + check.activeMembers + ' active members');
+        slack.send('We have ' + check.paidRetention + ' individual members and ' + check.activeGroupMembers + ' group members', true);
         check.activeMembers = 0;
+        check.paidRetention = 0;
+        check.activeGroupMembers = 0;
     },
 };
 
