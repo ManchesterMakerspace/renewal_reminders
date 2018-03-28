@@ -22,9 +22,5 @@
   "dependencies": {
     "@slack/client": "^3.14.1",
     "mongodb": "^2.2.33"
-  },
-  "engines": {
-    "node": "4.2.4",
-    "npm": "2.14.12"
   }
 }
