@@ -23,14 +23,12 @@ var slack = {
         slack.URL = webhook;
     },
     send: function(msg, useMetric){
-        if(slack.URL === "false"){   // not a valid url
-            console.log(msg);        // log messages if no webhook was given
-        } else {
+        if(slack.URL){               // if given a url
             var sendObj = {};
             if(useMetric){sendObj = new slack.webhook(slack.URL, slack.metricChannel);}
             else         {sendObj = new slack.webhook(slack.URL, slack.membersChannel);} // default to just outputting to membership channel
             sendObj.send(msg);
-        }
+        } else {console.log(msg);} // log messages if no webhook was given
     }
 };
 
