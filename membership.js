@@ -1,4 +1,4 @@
-// scheduled_check.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
+// membership.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 // millisecond conversions
 var ONE_DAY = 86400000;
 var DAYS_3  = ONE_DAY * 3;

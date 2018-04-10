@@ -6,7 +6,11 @@ provider:
   runtime: nodejs6.10
 
 functions:
-  reminders:
-    handler: reminders.start
+  membership:
+    handler: membership.start
     events:
-      - schedule: cron(0 11 * * ? *)
+      - schedule: cron(1 11 * * ? *)
+  rental:
+    handler: rental.start
+    events:
+      - schedule: cron(2 11 * * ? *)
