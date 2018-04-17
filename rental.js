@@ -91,7 +91,7 @@ var check = {
             else{slack.send(rentalDoc.member[0].fullname + ' needs to renew plot or locker in the next couple of days');} // if added a day to three days would member expire?
         }
         if((currentTime + DAYS_6) < rentalExpiration && (currentTime + DAYS_7) > rentalExpiration){ // if no ack and with in two weeks of expiring
-            var expiry = new Date(rentalDoc.expirationTime).toDateString();
+            var expiry = new Date(rentalExpiration).toDateString();
             if(rentalDoc.subscription){}
             else{slack.send(rentalDoc.member[0].fullname + " needs to renew by " + expiry);} // Notify comming expiration to renewal channel
         }
