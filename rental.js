@@ -93,7 +93,7 @@ var check = {
         if((currentTime + DAYS_6) < rentalExpiration && (currentTime + DAYS_7) > rentalExpiration){ // if no ack and with in two weeks of expiring
             var expiry = new Date(rentalExpiration).toDateString();
             if(rentalDoc.subscription){}
-            else{slack.send(rentalDoc.member[0].fullname + " needs to renew by " + expiry);} // Notify comming expiration to renewal channel
+            else{slack.send(rentalDoc.member[0].fullname + " needs to renew by locker or plot by " + expiry);} // Notify comming expiration to renewal channel
         }
     }
 };
