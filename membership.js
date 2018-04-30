@@ -114,7 +114,7 @@ var check = {
         }
     },
     memberCount: function(){
-        slack.send('Currently we have ' + check.activeMembers + ' active members');
+        slack.send('Currently we have ' + check.activeMembers + ' signed up');
         slack.send('We have ' + check.paidRetention + ' individual members and ' + check.activeGroupMembers + ' group members', true);
         slack.send('Since the begining of the month we gained ' + check.aquisitions + ' and lost ' + check.losses + ' individual members', true);
         check.activeMembers = 0;
