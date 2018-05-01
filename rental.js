@@ -73,27 +73,16 @@ var check = {
         });
     },
     upcomming: function(rentalDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
-        // console.log(rentalDoc.member[0].fullname);
-        // if(new Date(rentalDoc.expiration).getTime() < new Date().getTime()){console.log('plot expired');}
         var date = new Date(); var currentTime = date.getTime();
         var rentalExpiration = new Date(rentalDoc.expiration).getTime();
-
+        var expiry = new Date(rentalDoc.expiration).toDateString();
         if(currentTime > rentalExpiration){
-            if(rentalDoc.subscription){slack.send('Subscription issue: ' + rentalDoc.member[0].fullname + '\'s plot or locker has expired');}
-            else{slack.send(rentalDoc.member[0].fullname + '\'s plot or locker has expired');}
+            if(rentalDoc.subscription){slack.send('Subscription issue: ' + rentalDoc.member[0].fullname + '\'s plot or locker expired on ' + expiry, true);}
+            else{slack.send(rentalDoc.member[0].fullname + '\'s plot or locker expired on ' + expiry, true);}
         }
-        if(currentTime < rentalExpiration && (currentTime + ONE_DAY) > rentalExpiration){ // is member in date? if a day was added to today would they expire?
-            if(rentalDoc.subscription){}
-            else{slack.send(rentalDoc.member[0].fullname + '\'s plot or locker is expiring today');}
-        }
-        if((currentTime + ONE_DAY) < rentalExpiration && (currentTime + DAYS_3) > rentalExpiration){
-            if(rentalDoc.subscription){}
-            else{slack.send(rentalDoc.member[0].fullname + ' needs to renew plot or locker in the next couple of days');} // if added a day to three days would member expire?
-        }
-        if((currentTime + DAYS_6) < rentalExpiration && (currentTime + DAYS_7) > rentalExpiration){ // if no ack and with in two weeks of expiring
-            var expiry = new Date(rentalExpiration).toDateString();
-            if(rentalDoc.subscription){}
-            else{slack.send(rentalDoc.member[0].fullname + " needs to renew by locker or plot by " + expiry);} // Notify comming expiration to renewal channel
+        if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){                          // with in two weeks of expiring
+            if(rentalDoc.subscription){}                                                                           // exclude those on subscription
+            else{slack.send(rentalDoc.member[0].fullname + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
         }
     }
 };

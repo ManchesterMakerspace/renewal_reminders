@@ -9,8 +9,8 @@ functions:
   membership:
     handler: membership.start
     events:
-      - schedule: cron(1 11 * * ? *)
+      - schedule: cron(0 11 * * 7 *)
   rental:
     handler: rental.start
     events:
-      - schedule: cron(2 11 * * ? *)
+      - schedule: cron(0 11 * * 3 *)
