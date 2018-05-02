@@ -49,6 +49,8 @@ var check = {
     activeGroupMembers: 0,
     aquisitions: 0,
     losses: 0,
+    potentialLosses: 0,
+    onSubscription: 0,
     now: function(){
         mongo.connectAndDo(function onconnect(db){
             check.stream(db.collection('members').find({}), db); // pass cursor from query and db objects to start a stream
@@ -82,33 +84,41 @@ var check = {
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var date = new Date(); var currentTime = date.getTime();
-        date.setUTCDate(1); var beginingOfMonth = date.setUTCHours(0, 0, 0, 0);
+        var currentMonth = date.getMonth(); date.setMonth(currentMonth - 1);
+        var lastMonth = date.getTime();
+
         var membersExpiration = Number(memberDoc.expirationTime);
         var memberStart = Number(memberDoc.startTime);
+
         if(membersExpiration > currentTime){
-            check.activeMembers++;               // check and increment, if active member
-            if(memberDoc.groupName){check.activeGroupMembers++;}
+            check.activeMembers++;                                 // check and increment, if active member
+            if(memberDoc.groupName){check.activeGroupMembers++;}   // count signed up group members
             else {
                 check.paidRetention++;
-                if(memberStart > beginingOfMonth && memberStart < currentTime){check.aquisitions++;}
+                if(memberStart > lastMonth && memberStart < currentTime){check.aquisitions++;}
             }
+        } else { if(!memberDoc.groupName && membersExpiration > lastMonth){check.losses++;} }
+
+        if(memberDoc.subscription){
+            check.onSubscription++;
         } else {
-            if(!memberDoc.groupName && membersExpiration > beginingOfMonth){check.losses++;}
-        }
-        var expiry = new Date(memberDoc.expirationTime).toDateString();
-        if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){
-            if(memberDoc.subscription){slack.send('Subscription issue: ' + memberDoc.fullname + '\'s key expired on ' + expiry, true);}
-            else{slack.send(memberDoc.fullname + '\'s key expired on ' + expiry, true);}
-        }
-        if((currentTime + DAYS_14) > membersExpiration && currentTime < membersExpiration){ // with in two weeks of expiring
-            if(memberDoc.subscription){}                                                    // exclude those on subscription
-            else{slack.send(memberDoc.fullname + " needs to renew by " + expiry);}          // Notify comming expiration to renewal channel
+            var expiry = new Date(memberDoc.expirationTime).toDateString();
+            if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){
+                slack.send(memberDoc.fullname + '\'s key expired on ' + expiry, true);
+            }
+            if((currentTime + DAYS_14) > membersExpiration && currentTime < membersExpiration){ // with in two weeks of expiring
+                check.potentialLosses++;
+                slack.send(memberDoc.fullname + " needs to renew by " + expiry); // Notify comming expiration to renewal channel
+            }
         }
     },
     memberCount: function(){
         slack.send('Currently we have ' + check.activeMembers + ' members with keys to the space');
         slack.send('We have ' + check.paidRetention + ' individual members and ' + check.activeGroupMembers + ' group members', true);
-        slack.send('Since the begining of the month we gained ' + check.aquisitions + ' and lost ' + check.losses + ' individual members', true);
+        slack.send('In the past month we gained ' + check.aquisitions + ' and lost ' + check.losses + ' individual members', true);
+        var longTermPrePaid = check.paidRetention - (check.onSubscription + check.potentialLosses); // calculate those not on sub but not at risk
+        slack.send('There are ' + check.onSubscription + ' members on subscription, about ' + check.potentialLosses + ' at churn risk and about ' +
+        longTermPrePaid + ' are long term pre-paid (more than 2 weeks out) ', true);
         check.activeMembers = 0;
         check.paidRetention = 0;
         check.activeGroupMembers = 0;
