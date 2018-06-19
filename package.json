@@ -21,7 +21,7 @@
   "homepage": "https://github.com/ManchesterMakerspace/RenewalReminders#readme",
   "private": true,
   "dependencies": {
-    "@slack/client": "^3.14.1",
-    "mongodb": "^2.2.33"
+    "@slack/client": "^4.2.0",
+    "mongodb": "^2.2.35"
   }
 }

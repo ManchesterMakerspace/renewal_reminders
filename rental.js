@@ -77,12 +77,12 @@ var check = {
         var rentalExpiration = new Date(rentalDoc.expiration).getTime();
         var expiry = new Date(rentalDoc.expiration).toDateString();
         if(currentTime > rentalExpiration){
-            if(rentalDoc.subscription){slack.send('Subscription issue: ' + rentalDoc.member[0].fullname + '\'s plot or locker expired on ' + expiry, true);}
-            else{slack.send(rentalDoc.member[0].fullname + '\'s plot or locker expired on ' + expiry, true);}
+            if(rentalDoc.subscription){slack.send('Subscription issue: ' + rentalDoc.member[0].firstname + ' ' + rentalDoc.member[0].lastname + '\'s plot or locker expired on ' + expiry, true);}
+            else{slack.send(rentalDoc.member[0].firstname + ' ' + rentalDoc.member[0].lastname + '\'s plot or locker expired on ' + expiry, true);}
         }
         if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){                          // with in two weeks of expiring
             if(rentalDoc.subscription){}                                                                           // exclude those on subscription
-            else{slack.send(rentalDoc.member[0].fullname + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
+            else{slack.send(rentalDoc.member[0].firstname + ' ' + rentalDoc.member[0].lastname + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
         }
     }
 };

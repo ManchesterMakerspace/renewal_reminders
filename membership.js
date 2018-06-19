@@ -104,11 +104,11 @@ var check = {
         } else {
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){
-                slack.send(memberDoc.fullname + '\'s key expired on ' + expiry, true);
+                slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + '\'s key expired on ' + expiry, true);
             }
             if((currentTime + DAYS_14) > membersExpiration && currentTime < membersExpiration){ // with in two weeks of expiring
                 check.potentialLosses++;
-                slack.send(memberDoc.fullname + " needs to renew by " + expiry); // Notify comming expiration to renewal channel
+                slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + " needs to renew by " + expiry); // Notify comming expiration to renewal channel
             }
         }
     },
