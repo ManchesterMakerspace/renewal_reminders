@@ -84,32 +84,33 @@ var check = {
     upcomming: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var date = new Date(); var currentTime = date.getTime();
-        var currentMonth = date.getMonth(); date.setMonth(currentMonth - 1);
-        var lastMonth = date.getTime();
+        var currentMonth = date.getMonth(); // date of current month
+        date.setMonth(currentMonth - 1);    // increment month
+        var lastMonth = date.getTime();     // dete of proceeding month
 
         var membersExpiration = Number(memberDoc.expirationTime);
         var memberStart = Number(memberDoc.startTime);
+        var expiry = new Date(memberDoc.expirationTime).toDateString();
 
         if(membersExpiration > currentTime){
-            check.activeMembers++;                                 // check and increment, if active member
-            if(memberDoc.groupName){check.activeGroupMembers++;}   // count signed up group members
+            check.activeMembers++;                                  // check and increment, if active member
+            if(memberDoc.groupName){check.activeGroupMembers++;}    // count signed up group members
             else {
+                if(memberDoc.subscription){                         // only count subscription for current members in good standing
+                    check.onSubscription++;
+                } else {
+                    if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
+                        check.potentialLosses++;
+                        slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + " needs to renew by " + expiry); // Notify comming expiration to renewal channel
+                    }
+                }
                 check.paidRetention++;
                 if(memberStart > lastMonth && memberStart < currentTime){check.aquisitions++;}
             }
         } else { if(!memberDoc.groupName && membersExpiration > lastMonth){check.losses++;} }
 
-        if(memberDoc.subscription){
-            check.onSubscription++;
-        } else {
-            var expiry = new Date(memberDoc.expirationTime).toDateString();
-            if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){
-                slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + '\'s key expired on ' + expiry, true);
-            }
-            if((currentTime + DAYS_14) > membersExpiration && currentTime < membersExpiration){ // with in two weeks of expiring
-                check.potentialLosses++;
-                slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + " needs to renew by " + expiry); // Notify comming expiration to renewal channel
-            }
+        if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
+            slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + '\'s key expired on ' + expiry, true);
         }
     },
     memberCount: function(){
