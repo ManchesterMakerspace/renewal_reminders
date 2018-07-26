@@ -89,7 +89,7 @@ var check = {
         var lastMonth = date.getTime();     // dete of proceeding month
 
         var membersExpiration = Number(memberDoc.expirationTime);
-        var memberStart = Number(memberDoc.startTime);
+        var memberStart = Number(memberDoc.startDate);
         var expiry = new Date(memberDoc.expirationTime).toDateString();
 
         if(membersExpiration > currentTime){
