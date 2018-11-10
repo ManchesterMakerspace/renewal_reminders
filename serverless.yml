@@ -7,10 +7,10 @@ provider:
 
 functions:
   membership:
-    handler: membership.start
+    handler: reminders.membership
     events:
       - schedule: cron(0 11 ? * 7 *)
   rental:
-    handler: rental.start
+    handler: reminders.rental
     events:
       - schedule: cron(0 11 ? * 3 *)
