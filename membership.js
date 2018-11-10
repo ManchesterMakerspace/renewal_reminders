@@ -53,7 +53,12 @@ var check = {
     onSubscription: 0,
     now: function(){
         mongo.connectAndDo(function onconnect(db){
-            check.stream(db.collection('members').find({}), db); // pass cursor from query and db objects to start a stream
+            check.stream(db.collection('members').aggregate([{$lookup: {
+                from: "groups",
+                localField: "groupName",
+                foreignField: "groupName",
+                as: "group"
+            }}]), db); // pass cursor from query and db objects to start a stream
         }, function onError(error){                              // doubt this will happen but Murphy
             slack.send('could not connect to database for whatever reason, see logs');
             console.log('connect error ' + error);
@@ -74,7 +79,7 @@ var check = {
                         slack.send('Error checking database, see logs');
                         console.log('on check: ' + error);
                     } else {        // given we have got to end of stream, list currently active members
-                        setTimeout(check.memberCount, 4000);
+                        setTimeout(check.memberCount, 500);
                         db.close(); // close connection with database
                     }
                 }
@@ -86,11 +91,12 @@ var check = {
         var date = new Date(); var currentTime = date.getTime();
         var currentMonth = date.getMonth(); // date of current month
         date.setMonth(currentMonth - 1);    // increment month
-        var lastMonth = date.getTime();     // dete of proceeding month
-
-        var membersExpiration = Number(memberDoc.expirationTime);
-        var memberStart = Number(memberDoc.startDate);
-        var expiry = new Date(memberDoc.expirationTime).toDateString();
+        var lastMonth = date.getTime();     // date of proceeding month
+        // given that this is a group member assign group expiration time
+        var membersExpiration = memberDoc.groupName ? memberDoc.group[0].expiry: memberDoc.expirationTime;
+        var expiry = new Date(membersExpiration).toDateString();
+        membersExpiration = Number(membersExpiration); // Coerse type to be a number just in case its a date object
+        var memberStart = Number(memberDoc.startDate); // If this is a date object Number will convert to millis
 
         if(membersExpiration > currentTime){
             check.activeMembers++;                                  // check and increment, if active member
