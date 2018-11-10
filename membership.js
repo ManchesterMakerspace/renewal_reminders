@@ -7,28 +7,21 @@ var DAYS_7 = ONE_DAY * 7;
 var DAYS_13 = ONE_DAY * 13;
 var DAYS_14 = ONE_DAY * 14;
 
+var querystring = require('querystring');
+var https = require('https');
 var slack = {
-    webhook: require('@slack/client').IncomingWebhook,   // url to slack intergration called "webhook" can post to any channel as a "bot"
-    init: function(webhook, membersChannel, metricChannel){
-        slack.membersChannel = {
-            username: 'Reminder Bot',
-            channel: membersChannel,
-            iconEmoji: ':reminder_ribbon:'
-        };
-        slack.metricChannel = {
-            username: 'Membership Stats',
-            channel: metricChannel,
-            iconEmoji: ':mag:'
-        };
-        slack.URL = webhook;
-    },
+    MEMBERSHIP_PATH: process.env.MEMBERSHIP_WEBHOOK,
+    METRIC_PATH:     process.env.MR_WEBHOOK,
     send: function(msg, useMetric){
-        if(slack.URL){               // if given a url
-            var sendObj = {};
-            if(useMetric){sendObj = new slack.webhook(slack.URL, slack.metricChannel);}
-            else         {sendObj = new slack.webhook(slack.URL, slack.membersChannel);} // default to just outputting to membership channel
-            sendObj.send(msg);
-        } else {console.log(msg);} // log messages if no webhook was given
+        var postData = JSON.stringify({'text': msg});
+        var options = {
+            hostname: 'hooks.slack.com', port: 443, method: 'POST',
+            path: useMetric ? slack.METRIC_PATH : slack.MEMBERSHIP_PATH,
+            headers: {'Content-Type': "application/json",'Content-Length': postData.length}
+        };
+        var req = https.request(options, function(res){}); // just do it, no need for response
+        req.on('error', function(error){console.log(error);});
+        req.write(postData); req.end();
     }
 };
 
@@ -79,7 +72,7 @@ var check = {
                         slack.send('Error checking database, see logs');
                         console.log('on check: ' + error);
                     } else {        // given we have got to end of stream, list currently active members
-                        setTimeout(check.memberCount, 500);
+                        setTimeout(check.memberCount, 1000);
                         db.close(); // close connection with database
                     }
                 }
@@ -143,9 +136,10 @@ var getMillis = {
 };
 
 function startup(event, context){
-    var metricsChannel = event && event.METRICS_CHANNEL ? event.METRICS_CHANNEL : process.env.METRICS_CHANNEL; // if lambda passes something use it
-    var membersChannel = event && event.MEMBERS_CHANNEL ? event.MEMBERS_CHANNEL : process.env.MEMBERS_CHANNEL; // Otherwise use env vars
-    slack.init(process.env.SLACK_WEBHOOK_URL, membersChannel, metricsChannel);
+    if(event && event.METRICS_CHANNEL && event.MEMBERS_CHANNEL){ // give ability to test from different channels from lambda
+        slack.MEMBERSHIP_PATH = event.MEMBERS_CHANNEL;
+        slack.METRIC_PATH = event.METRICS_CHANNEL;
+    }
     if(process.env.ONE_OFF === 'true'){                                              // Case that of just testing things out or running as a lambda function
         check.now();
     } else {                                                                         // Case of run as a self contained cron with pm2/jitploy
