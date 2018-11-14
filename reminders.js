@@ -6,6 +6,7 @@ var DAYS_7 = ONE_DAY * 7;
 var DAYS_13 = ONE_DAY * 13;
 var DAYS_14 = ONE_DAY * 14;
 
+var crypto = require('crypto');
 var querystring = require('querystring');
 var https = require('https');
 var slack = {
@@ -71,6 +72,7 @@ member = {
         foreignField: "groupName",
         as: "group"
     },
+    msg: {msg: 'Renewal Reminders', metric: 'Expirations and Metrics'},
     stream: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
         var date = new Date(); var currentTime = date.getTime();
@@ -92,7 +94,7 @@ member = {
                 } else {
                     if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
                         member.potentialLosses++;
-                        slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + " needs to renew by " + expiry); // Notify comming expiration to renewal channel
+                        member.msg.msg += '\n' + memberDoc.firstname + ' ' + memberDoc.lastname + " needs to renew by " + expiry; // Notify comming expiration to renewal channel
                     }
                 }
                 member.paidRetention++;
@@ -101,19 +103,17 @@ member = {
         } else { if(!memberDoc.groupName && membersExpiration > lastMonth){member.losses++;} }
 
         if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
-            slack.send(memberDoc.firstname + ' ' + memberDoc.lastname + '\'s key expired on ' + expiry, true);
+            member.msg.metric += '\n' + memberDoc.firstname + ' ' + memberDoc.lastname + '\'s key expired on ' + expiry;
         }
     },
     finish: function(){
-        slack.send('Currently we have ' + member.activeMembers + ' members with keys to the space');
-        slack.send('We have ' + member.paidRetention + ' individual members and ' + member.activeGroupMembers + ' group members', true);
-        slack.send('In the past month we gained ' + member.aquisitions + ' and lost ' + member.losses + ' individual members', true);
+        member.msg.msg += '\nCurrently we have ' + member.activeMembers + ' members with keys to the space';
+        member.msg.metric += '\nWe have ' + member.paidRetention + ' individual members and ' + member.activeGroupMembers + ' group members';
+        member.msg.metric += '\nIn the past month we gained ' + member.aquisitions + ' and lost ' + member.losses + ' individual members';
         var longTermPrePaid = member.paidRetention - (member.onSubscription + member.potentialLosses); // calculate those not on sub but not at risk
-        slack.send('There are ' + member.onSubscription + ' members on subscription, about ' + member.potentialLosses + ' at churn risk and about ' +
-        longTermPrePaid + ' are long term pre-paid (more than 2 weeks out) ', true);
-        member.activeMembers = 0;
-        member.paidRetention = 0;
-        member.activeGroupMembers = 0;
+        member.msg.metric += '\nThere are ' + member.onSubscription + ' members on subscription, about ' + member.potentialLosses + ' at churn risk and about ' +
+        longTermPrePaid + ' are long term pre-paid (more than 2 weeks out) ';
+        return member.msg;
     }
 };
 
@@ -125,37 +125,86 @@ var rental = {
         foreignField: "_id",
         as: "member"
     },
-    stream: function(rental){
+    msg: '',
+    stream: function(doc){
         var date = new Date(); var currentTime = date.getTime();
-        var rentalExpiration = new Date(rental.expiration).getTime();
-        var expiry = new Date(rental.expiration).toDateString();
-        var name = rental.member[0].firstname + ' ' + rental.member[0].lastname;
+        var rentalExpiration = new Date(doc.expiration).getTime();
+        var expiry = new Date(doc.expiration).toDateString();
+        var name = doc.member[0].firstname + ' ' + doc.member[0].lastname;
         if(currentTime > rentalExpiration){
-            if(rental.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
-            else{slack.send(name + '\'s plot or locker expired on ' + expiry);}
+            if(doc.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
+            else{rental.msg += name + '\'s plot or locker expired on ' + expiry + '\n';}
         }
-        if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){  // with in two weeks of expiring
-            if(rental.subscription){}                                                      // exclude those on subscription
-            else{slack.send(name + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
+        if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){           // with in two weeks of expiring
+            if(doc.subscription){}                                                                  // exclude those on subscription
+            else{rental.msg += name + " needs to renew thier locker or plot by " + expiry + '\n';}  // Notify comming expiration to renewal channel
         }
     },
-    finish: function(){}
+    finish: function(){return {msg: rental.msg, metric: ''};}
 };
 
-function startup(collection, query, stream, finish){
-    return function(event, context){
-        if(event && event.METRICS_CHANNEL && event.MEMBERS_CHANNEL){ // give ability to test from different channels from lambda
-            slack.MEMBERSHIP_PATH = event.MEMBERS_CHANNEL;
-            slack.METRIC_PATH = event.METRICS_CHANNEL;
-        }
-        mongo.startQuery(collection, query, stream, finish);
-    };
-}
+var varify = {
+    slack_sign_secret: process.env.SLACK_SIGNING_SECRET,
+    request: function(event){
+        var timestamp = event.headers['X-Slack-Request-Timestamp'];        // nonce from slack to have an idea
+        var secondsFromEpoch = Math.round(new Date().getTime() / 1000);    // get current seconds from epoch because thats what we are comparing with
+        if(Math.abs(secondsFromEpoch - timestamp > 60 * 5)){return false;} // make sure request isn't a duplicate
+        var computedSig = 'v0=' + crypto.createHmac('sha256', varify.slack_sign_secret).update('v0:' + timestamp + ':' + event.body).digest('hex');
+        return crypto.timingSafeEqual(Buffer.from(event.headers['X-Slack-Signature'], 'utf8'), Buffer.from(computedSig ,'utf8'));
+    }
+};
+
+var app = {
+    startup: function(collection, query, stream, finish){
+        return function(event, context){
+            if(event && event.METRICS_CHANNEL && event.MEMBERS_CHANNEL){ // give ability to test from different channels from lambda
+                slack.MEMBERSHIP_PATH = event.MEMBERS_CHANNEL;
+                slack.METRIC_PATH = event.METRICS_CHANNEL;
+            }
+            mongo.startQuery(collection, query, stream, function onFinish(){
+                var msg = finish();
+                // console.log(msg.msg + '\n' + msg.metric);
+                slack.send(msg.msg); slack.send(msg.metric, true);
+            });
+        };
+    },
+    api: function(collection, query, stream, finish){
+        return function lambda(event, context, callback){
+            var body = querystring.parse(event.body);
+            var response = {statusCode:403, headers: {'Content-type': 'application/json'}};
+            if(varify.request(event)){
+                response.statusCode = 200;
+                if(body.channel_id === process.env.PRIVATE_VIEW_CHANNEL || body.user_name === process.env.ADMIN){
+                    mongo.startQuery(monthsDurration, function onFinish(){  // start db request before varification for speed
+                        var msg = finish();                                 // run passed compilation totalling function
+                        response.body = JSON.stringify({
+                            'response_type' : body.text === 'show' ? 'in_channel' : 'ephemeral', // 'in_channel' or 'ephemeral'
+                            'text' : msg.msg + '\n' + msg.metric
+                        });
+                        callback(null, response);
+                    });
+                } else {
+                    console.log(body.user_name + ' is curious');
+                    response.body = JSON.stringify({
+                        'response_type' : 'ephemeral', // 'ephemeral' or 'in_channel'
+                        'text' : 'This information can only be displayed in unauthorized channels',
+                    });
+                    callback(null, response);
+                }
+            } else {
+                console.log('failed to varify signature :' + JSON.stringify(event, null, 4));
+                callback(null, response);
+            }
+        };
+    }
+};
 
 if(process.env.LAMBDA === 'true'){
-    exports.member = startup(member.collection, member.lookupQuery, member.stream, member.finish);
-    exports.rental = startup(rental.collection, rental.lookupQuery, rental.stream, rental.finish);
+    exports.member = app.startup(member.collection, member.lookupQuery, member.stream, member.finish);
+    exports.rental = app.startup(rental.collection, rental.lookupQuery, rental.stream, rental.finish);
+    exports.memberApi = app.api(member.collection, member.lookupQuery, member.stream, member.finish);
+    exports.rentalApi = app.api(rental.collection, rental.lookupQuery, rental.stream, rental.finish);
 } else {
-    startup(member.collection, member.lookupQuery, member.stream, member.finish)(); // member test case
-    // startup(rental.collection, rental.lookupQuery, rental.stream, rental.finish)();    // rental test case
+    app.startup(member.collection, member.lookupQuery, member.stream, member.finish)(); // member test case
+    app.startup(rental.collection, rental.lookupQuery, rental.stream, rental.finish)(); // rental test case
 }

@@ -2,12 +2,9 @@
   "name": "renewal_reminders",
   "version": "1.3.0",
   "description": "System for checking if members in our database need to be renewed",
-  "main": "membership.js",
+  "main": "reminders.js",
   "scripts": {
-    "rental-reminders": "node rental.js",
-    "postversion": "git push",
-    "renewal-reminders": "node membership.js",
-    "setup": "npm install pm2 jitploy && git clone https://github.com/ManchesterMakerspace/renewal_reminders.git"
+    "postversion": "git push"
   },
   "repository": {
     "type": "git",

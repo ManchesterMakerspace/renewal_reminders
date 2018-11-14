@@ -2,15 +2,27 @@
 service: reminders
 
 provider:
-  name: aws
-  runtime: nodejs8.10
+    name: aws
+    runtime: nodejs8.10
 
 functions:
-  membership:
-    handler: reminders.membership
-    events:
-      - schedule: cron(0 11 ? * 7 *)
-  rental:
-    handler: reminders.rental
-    events:
-      - schedule: cron(0 11 ? * 3 *)
+    membership:
+        handler: reminders.membership
+        events:
+            - schedule: cron(0 11 ? * 7 *)
+    rental:
+        handler: reminders.rental
+        events:
+            - schedule: cron(0 11 ? * 3 *)
+    rentalApi:
+        handler: reminders.rentalApi
+        events:
+            - http:
+                path: rental
+                method: POST
+    memberApi:
+        handler: reminders.memberApi
+        events:
+            - http:
+                path: member
+                method: POST
