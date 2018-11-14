@@ -175,7 +175,7 @@ var app = {
             if(varify.request(event)){
                 response.statusCode = 200;
                 if(body.channel_id === process.env.PRIVATE_VIEW_CHANNEL || body.user_name === process.env.ADMIN){
-                    mongo.startQuery(monthsDurration, function onFinish(){  // start db request before varification for speed
+                    mongo.startQuery(collection, query, stream, function onFinish(){  // start db request before varification for speed
                         var msg = finish();                                 // run passed compilation totalling function
                         response.body = JSON.stringify({
                             'response_type' : body.text === 'show' ? 'in_channel' : 'ephemeral', // 'in_channel' or 'ephemeral'
