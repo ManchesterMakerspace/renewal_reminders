@@ -7,7 +7,7 @@ provider:
 
 functions:
     membership:
-        handler: reminders.membership
+        handler: reminders.member
         events:
             - schedule: cron(0 11 ? * 7 *)
     rental:

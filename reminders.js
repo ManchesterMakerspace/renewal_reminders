@@ -5,10 +5,13 @@ var DAYS_6 = ONE_DAY * 6;
 var DAYS_7 = ONE_DAY * 7;
 var DAYS_13 = ONE_DAY * 13;
 var DAYS_14 = ONE_DAY * 14;
+var DB_NAME = process.env.DB_NAME;
 
+var MongoClient = require('mongodb').MongoClient;
 var crypto = require('crypto');
 var querystring = require('querystring');
 var https = require('https');
+
 var slack = {
     MEMBERSHIP_PATH: process.env.MEMBERSHIP_WEBHOOK,
     METRIC_PATH:     process.env.MR_WEBHOOK,
@@ -25,31 +28,30 @@ var slack = {
     }
 };
 
-var mongoClient = require('mongodb').MongoClient;
 var mongo = {
     startQuery: function(collection, query, stream, finish){
-        mongoClient.connect(process.env.MONGODB_URI, function onConnect(error, db){
-            if(db){ // pass cursor from query and db objects to start a stream
-                mongo.stream(db.collection(collection).aggregate([{$lookup: query}]), db, stream, finish);
-            } else if(error){
+        MongoClient.connect(process.env.MONGODB_URI, {useNewUrlParser: true}, function onConnect(connectError, client){
+            if(client){ // pass cursor from query and db objects to start a stream
+                mongo.stream(client.db(DB_NAME).collection(collection).aggregate([{$lookup: query}]), client, stream, finish);
+            } else if(connectError){
                 slack.send('could not connect to database for whatever reason, see logs');
-                console.log('connect error ' + error);
+                console.log('connect error ' + connectError);
             }
         });
     },
-    stream: function(cursor, db, stream, finish){
+    stream: function(cursor, client, stream, finish){
         process.nextTick(function onNextTick(){
-            cursor.nextObject(function onDoc(error, doc){
+            cursor.next(function onDoc(error, doc){
                 if(doc){
                     stream(doc);                               // action for each doc in stream
-                    mongo.stream(cursor, db, stream, finish);  // recursively move through all members in collection
+                    mongo.stream(cursor, client, stream, finish);  // recursively move through all members in collection
                 } else {
                     if(error){
                         slack.send('Error checking database, see logs');
                         console.log('on check: ' + error);
-                    } else {        // given we have got to end of stream, list currently active members
+                    } else {                      // given we have got to end of stream, list currently active members
                         setTimeout(finish, 1000); // call finish function to compile gathered data
-                        db.close(); // close connection with database
+                        client.close();           // close connection with database
                     }
                 }
             });
@@ -163,8 +165,8 @@ var app = {
             }
             mongo.startQuery(collection, query, stream, function onFinish(){
                 var msg = finish();
-                // console.log(msg.msg + '\n' + msg.metric);
-                slack.send(msg.msg); slack.send(msg.metric, true);
+                console.log(msg.msg + '\n' + msg.metric);
+                // slack.send(msg.msg); slack.send(msg.metric, true);
             });
         };
     },
