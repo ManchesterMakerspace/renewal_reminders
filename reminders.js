@@ -29,10 +29,10 @@ var slack = {
 };
 
 var mongo = {
-    startQuery: function(collection, query, stream, finish){
+    startQuery: function(collection, aggregation, stream, finish){
         MongoClient.connect(process.env.MONGODB_URI, {useNewUrlParser: true}, function onConnect(connectError, client){
             if(client){ // pass cursor from query and db objects to start a stream
-                mongo.stream(client.db(DB_NAME).collection(collection).aggregate([{$lookup: query}]), client, stream, finish);
+                mongo.stream(client.db(DB_NAME).collection(collection).aggregate(aggregation), client, stream, finish);
             } else if(connectError){
                 slack.send('could not connect to database for whatever reason, see logs');
                 console.log('connect error ' + connectError);
@@ -68,12 +68,12 @@ member = {
     potentialLosses: 0,
     onSubscription: 0,
     collection: 'members',
-    lookupQuery: {
+    aggregation: [{$lookup:{
         from: "groups",
         localField: "groupName",
         foreignField: "groupName",
         as: "group"
-    },
+    }}],
     msg: {msg: 'Renewal Reminders', metric: 'Expirations and Metrics'},
     stream: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
@@ -121,12 +121,12 @@ member = {
 
 var rental = {
     collection: 'rentals',
-    lookupQuery: {
+    aggregation: [{$lookup: {
         from: "members",
         localField: "member_id",
         foreignField: "_id",
         as: "member"
-    },
+    }}],
     msg: '',
     stream: function(doc){
         var date = new Date(); var currentTime = date.getTime();
@@ -202,11 +202,11 @@ var app = {
 };
 
 if(process.env.LAMBDA === 'true'){
-    exports.member = app.startup(member.collection, member.lookupQuery, member.stream, member.finish);
-    exports.rental = app.startup(rental.collection, rental.lookupQuery, rental.stream, rental.finish);
-    exports.memberApi = app.api(member.collection, member.lookupQuery, member.stream, member.finish);
-    exports.rentalApi = app.api(rental.collection, rental.lookupQuery, rental.stream, rental.finish);
+    exports.member = app.startup(member.collection, member.aggregation, member.stream, member.finish);
+    exports.rental = app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish);
+    exports.memberApi = app.api(member.collection, member.aggregation, member.stream, member.finish);
+    exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
 } else {
-    app.startup(member.collection, member.lookupQuery, member.stream, member.finish)(); // member test case
-    app.startup(rental.collection, rental.lookupQuery, rental.stream, rental.finish)(); // rental test case
+    app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
+    app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish)(); // rental test case
 }
