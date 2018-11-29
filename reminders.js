@@ -25,6 +25,23 @@ var slack = {
         var req = https.request(options, function(res){}); // just do it, no need for response
         req.on('error', function(error){console.log(error);});
         req.write(postData); req.end();
+    },
+    im: function(user_id, msg){
+        var postData = '{"channel": "'+user_id+'", "text":"'+ msg + '"}';
+        var options = {
+            hostname: 'slack.com', port: 443, method: 'POST',
+            path: '/api/chat.postMessage',
+            headers: {'Content-type': 'application/json','Content-Length': postData.length, Authorization: 'Bearer ' + process.env.BOT_TOKEN}
+        };
+        var req = https.request(options, function(res){
+            var body = '';
+            res.on('data', function(data){body+=data;});
+            res.on('end', function(){
+                console.log(body);
+            });
+        }); // just do it, no need for response
+        req.on('error', function(error){console.log(error);});
+        req.write(postData); req.end();
     }
 };
 
@@ -138,7 +155,7 @@ var rental = {
         var expiry = new Date(doc.expiration).toDateString();
         var name = doc.member[0].firstname + ' ' + doc.member[0].lastname;
         if(currentTime > rentalExpiration){
-            if(doc.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
+            if(doc.subscription){rental.msg += 'Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry + '\n';}
             else{rental.msg += name + '\'s plot or locker expired on ' + expiry + '\n';}
         }
         if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){           // with in two weeks of expiring
@@ -211,6 +228,7 @@ if(process.env.LAMBDA === 'true'){
     exports.memberApi = app.api(member.collection, member.aggregation, member.stream, member.finish);
     exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
 } else {
-    app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
+    // app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
     // app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish)(); // rental test case
+    slack.im(process.env.TEST_ID, 'Yo does this work');
 }
