@@ -69,12 +69,14 @@ member = {
     onSubscription: 0,
     collection: 'members',
     aggregation: [
-        {$lookup:{ from: "groups", localField: "groupName", foreignField: "groupName",as: "group"}},
+        {$lookup:{ from: "groups", localField: "groupName", foreignField: "groupName", as: "group"}},
+        {$lookup:{ from: "slack_users", localField: "_id", foreignField: "member_id", as: "slack_user"}},
         {$project: {
             fullname: {$concat: ['$firstname', ' ', '$lastname']},
             expirationTime: 1, startDate: 1, status: 1, subscription: 1,
-            groupExpiry: {$arrayElemAt: ["$group.expiry", 0]} }
-        }
+            groupExpiry: {$arrayElemAt: ['$group.expiry', 0]},
+            slack_id: {$arrayElemAt: ['$slack_user.slack_id', 0]}
+        }}
     ],
     msg: {msg: 'Renewal Reminders', metric: 'Expirations and Metrics'},
     stream: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
@@ -210,5 +212,5 @@ if(process.env.LAMBDA === 'true'){
     exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
 } else {
     app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
-    app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish)(); // rental test case
+    // app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish)(); // rental test case
 }
