@@ -68,12 +68,14 @@ member = {
     potentialLosses: 0,
     onSubscription: 0,
     collection: 'members',
-    aggregation: [{$lookup:{
-        from: "groups",
-        localField: "groupName",
-        foreignField: "groupName",
-        as: "group"
-    }}],
+    aggregation: [
+        {$lookup:{ from: "groups", localField: "groupName", foreignField: "groupName",as: "group"}},
+        {$project: {
+            fullname: {$concat: ['$firstname', ' ', '$lastname']},
+            expirationTime: 1, startDate: 1, status: 1, subscription: 1,
+            groupExpiry: {$arrayElemAt: ["$group.expiry", 0]} }
+        }
+    ],
     msg: {msg: 'Renewal Reminders', metric: 'Expirations and Metrics'},
     stream: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
         if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
@@ -82,30 +84,30 @@ member = {
         date.setMonth(currentMonth - 1);    // increment month
         var lastMonth = date.getTime();     // date of proceeding month
         // given that this is a group member assign group expiration time
-        var membersExpiration = memberDoc.groupName ? memberDoc.group[0].expiry: memberDoc.expirationTime;
+        var membersExpiration = memberDoc.groupExpiry ? memberDoc.groupExpiry: memberDoc.expirationTime;
         var expiry = new Date(membersExpiration).toDateString();
         membersExpiration = Number(membersExpiration); // Coerse type to be a number just in case its a date object
         var memberStart = Number(memberDoc.startDate); // If this is a date object Number will convert to millis
 
         if(membersExpiration > currentTime){
             member.activeMembers++;                               // check and increment, if active member
-            if(memberDoc.groupName){member.activeGroupMembers++;} // count signed up group members
+            if(memberDoc.groupExpiry){member.activeGroupMembers++;} // count signed up group members
             else {
                 if(memberDoc.subscription){                           // only count subscription for current members in good standing
                     member.onSubscription++;
                 } else {
                     if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
                         member.potentialLosses++;
-                        member.msg.msg += '\n' + memberDoc.firstname + ' ' + memberDoc.lastname + " needs to renew by " + expiry; // Notify comming expiration to renewal channel
+                        member.msg.msg += '\n' + memberDoc.fullname + " needs to renew by " + expiry; // Notify comming expiration to renewal channel
                     }
                 }
                 member.paidRetention++;
                 if(memberStart > lastMonth && memberStart < currentTime){member.aquisitions++;}
             }
-        } else { if(!memberDoc.groupName && membersExpiration > lastMonth){member.losses++;} }
+        } else { if(!memberDoc.groupExpiry && membersExpiration > lastMonth){member.losses++;} }
 
         if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
-            member.msg.metric += '\n' + memberDoc.firstname + ' ' + memberDoc.lastname + '\'s key expired on ' + expiry;
+            member.msg.metric += '\n' + memberDoc.fullname + '\'s key expired on ' + expiry;
         }
     },
     finish: function(){
