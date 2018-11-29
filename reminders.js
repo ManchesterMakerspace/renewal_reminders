@@ -33,13 +33,7 @@ var slack = {
             path: '/api/chat.postMessage',
             headers: {'Content-type': 'application/json','Content-Length': postData.length, Authorization: 'Bearer ' + process.env.BOT_TOKEN}
         };
-        var req = https.request(options, function(res){
-            var body = '';
-            res.on('data', function(data){body+=data;});
-            res.on('end', function(){
-                console.log(body);
-            });
-        }); // just do it, no need for response
+        var req = https.request(options, function(res){}); // just do it, no need for response
         req.on('error', function(error){console.log(error);});
         req.write(postData); req.end();
     }
@@ -90,7 +84,7 @@ member = {
         {$lookup:{ from: "slack_users", localField: "_id", foreignField: "member_id", as: "slack_user"}},
         {$project: {
             fullname: {$concat: ['$firstname', ' ', '$lastname']},
-            expirationTime: 1, startDate: 1, status: 1, subscription: 1,
+            expirationTime: 1, startDate: 1, status: 1, subscription: 1, firstname: 1,
             groupExpiry: {$arrayElemAt: ['$group.expiry', 0]},
             slack_id: {$arrayElemAt: ['$slack_user.slack_id', 0]}
         }}
@@ -118,6 +112,13 @@ member = {
                     if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
                         member.potentialLosses++;
                         member.msg.msg += '\n' + memberDoc.fullname + " needs to renew by " + expiry; // Notify comming expiration to renewal channel
+                        slack.im(memberDoc.slack_id,
+                            'Hey ' + memberDoc.firstname +
+                            '! just a heads up, you may need to renew membership soon on ' + expiry +
+                            '.\nThere are cases that this message sends when on subscription. If so we\'ll renew you as soon as your payment comes through. ' +
+                            '\nIf not on subscription it is possible to sign up here - https://manchestermakerspace.org/membership/ ' +
+                            ' Thank you for being a part of the makerspace! Please reach out in #membership with any questions.'
+                        );
                     }
                 }
                 member.paidRetention++;
@@ -186,8 +187,8 @@ var app = {
             }
             mongo.startQuery(collection, query, stream, function onFinish(){
                 var msg = finish();
-                console.log(msg.msg + '\n' + msg.metric);
-                // slack.send(msg.msg); slack.send(msg.metric, true);
+                // console.log(msg.msg + '\n' + msg.metric);
+                slack.send(msg.msg); slack.send(msg.metric, true);
             });
         };
     },
@@ -228,7 +229,6 @@ if(process.env.LAMBDA === 'true'){
     exports.memberApi = app.api(member.collection, member.aggregation, member.stream, member.finish);
     exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
 } else {
-    // app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
+    app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
     // app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish)(); // rental test case
-    slack.im(process.env.TEST_ID, 'Yo does this work');
 }
