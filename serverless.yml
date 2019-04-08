@@ -3,7 +3,21 @@ service: reminders
 
 provider:
     name: aws
+    stage: prod
     runtime: nodejs8.10
+    region: us-east-1
+    timeout: 3
+    memorySize: 512
+    enviornment:
+        MONGODB_URI: ${env:MONGODB_URI}
+        DB_NAME: ${env:DB_NAME}
+        SLACK_SIGNING_SECRET: ${env:SLACK_SIGNING_SECRET}
+        BOT_TOKEN: ${env:BOT_TOKEN}
+        LAMBDA: ${env:LAMBDA}
+        MEMBERSHIP_WEBHOOK: ${env:MEMBERSHIP_WEBHOOK}
+        MR_WEBHOOK: ${env:MR_WEBHOOK}
+        PRIVATE_VIEW_CHANNEL: ${env:PRIVATE_VIEW_CHANNEL}
+        ADMIN: ${env:ADMIN}
 
 functions:
     membership:

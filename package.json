@@ -3,9 +3,6 @@
   "version": "1.5.0",
   "description": "System for checking if members in our database need to be renewed",
   "main": "reminders.js",
-  "scripts": {
-    "postversion": "git push"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ManchesterMakerspace/RenewalReminders.git"
