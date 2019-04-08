@@ -223,12 +223,8 @@ var app = {
     }
 };
 
-if(process.env.LAMBDA === 'true'){
-    exports.member = app.startup(member.collection, member.aggregation, member.stream, member.finish);
-    exports.rental = app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish);
-    exports.memberApi = app.api(member.collection, member.aggregation, member.stream, member.finish);
-    exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
-} else {
-    app.startup(member.collection, member.aggregation, member.stream, member.finish)(); // member test case
-    // app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish)(); // rental test case
-}
+exports.member = app.startup(member.collection, member.aggregation, member.stream, member.finish);
+exports.rental = app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish);
+exports.memberApi = app.api(member.collection, member.aggregation, member.stream, member.finish);
+exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
+// if(!module.parent){} // run stand alone test

@@ -13,7 +13,6 @@ provider:
         DB_NAME: ${env:DB_NAME}
         SLACK_SIGNING_SECRET: ${env:SLACK_SIGNING_SECRET}
         BOT_TOKEN: ${env:BOT_TOKEN}
-        LAMBDA: ${env:LAMBDA}
         MEMBERSHIP_WEBHOOK: ${env:MEMBERSHIP_WEBHOOK}
         MR_WEBHOOK: ${env:MR_WEBHOOK}
         PRIVATE_VIEW_CHANNEL: ${env:PRIVATE_VIEW_CHANNEL}
