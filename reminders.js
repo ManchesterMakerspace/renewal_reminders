@@ -219,7 +219,7 @@ var app = {
                         slack.im(body.user_id, msg.msg + '\n' + msg.metric);
                         response.body = JSON.stringify({
                             'response_type' : 'ephemeral', // 'in_channel' or 'ephemeral'
-                            'text' : ''
+                            'text' : 'Check your slackbot for results'
                         });
                         callback(null, response);
                     });
