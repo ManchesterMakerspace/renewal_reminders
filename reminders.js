@@ -90,49 +90,53 @@ member = {
         }}
     ],
     msg: {msg: 'Renewal Reminders', metric: 'Expirations and Metrics'},
-    stream: function(memberDoc){              // check if this member is close to expiring (FOR 24 hours) does not show expired members
-        if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
-        var date = new Date(); var currentTime = date.getTime();
-        var currentMonth = date.getMonth(); // date of current month
-        date.setMonth(currentMonth - 1);    // increment month
-        var lastMonth = date.getTime();     // date of proceeding month
-        // given that this is a group member assign group expiration time
-        var membersExpiration = memberDoc.groupExpiry ? memberDoc.groupExpiry: memberDoc.expirationTime;
-        var expiry = new Date(membersExpiration).toDateString();
-        membersExpiration = Number(membersExpiration); // Coerse type to be a number just in case its a date object
-        var memberStart = Number(memberDoc.startDate); // If this is a date object Number will convert to millis
+    stream: function(cron){
+        return function(memberDoc){ // check if this member is close to expiring (FOR 24 hours) does not show expired members
+            if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
+            var date = new Date(); var currentTime = date.getTime();
+            var currentMonth = date.getMonth(); // date of current month
+            date.setMonth(currentMonth - 1);    // increment month
+            var lastMonth = date.getTime();     // date of proceeding month
+            // given that this is a group member assign group expiration time
+            var membersExpiration = memberDoc.groupExpiry ? memberDoc.groupExpiry: memberDoc.expirationTime;
+            var expiry = new Date(membersExpiration).toDateString();
+            membersExpiration = Number(membersExpiration); // Coerse type to be a number just in case its a date object
+            var memberStart = Number(memberDoc.startDate); // If this is a date object Number will convert to millis
 
-        if(membersExpiration > currentTime){
-            member.activeMembers++;                               // check and increment, if active member
-            if(memberDoc.groupExpiry){member.activeGroupMembers++;} // count signed up group members
-            else {
-                if(memberDoc.subscription){                           // only count subscription for current members in good standing
-                    member.onSubscription++;
-                } else {
-                    if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
-                        member.potentialLosses++;
-                        member.msg.msg += '\n' + memberDoc.fullname + " needs to renew by " + expiry; // Notify comming expiration to renewal channel
-                        slack.im(memberDoc.slack_id,
-                            'Hey ' + memberDoc.firstname +
-                            '! just a heads up, you may need to renew membership soon on ' + expiry +
-                            '.\nThere are cases that this message sends when on subscription. If so we\'ll renew you as soon as your payment comes through. ' +
-                            '\nIf not on subscription it is possible to sign up here - https://manchestermakerspace.org/membership/ ' +
-                            ' Thank you for being a part of the makerspace! Please reach out in #membership with any questions.'
-                        );
+            if(membersExpiration > currentTime){
+                member.activeMembers++;                               // check and increment, if active member
+                if(memberDoc.groupExpiry){member.activeGroupMembers++;} // count signed up group members
+                else {
+                    if(memberDoc.subscription){                           // only count subscription for current members in good standing
+                        member.onSubscription++;
+                    } else {
+                        if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
+                            member.potentialLosses++;
+                            slack.send(memberDoc.fullname + " needs to renew by " + expiry);
+                            if(cron){
+                                slack.im(memberDoc.slack_id,
+                                    'Hey ' + memberDoc.firstname +
+                                    '! just a heads up, you may need to renew membership soon on ' + expiry +
+                                    '.\nThere are cases that this message sends when on subscription. If so we\'ll renew you as soon as your payment comes through. ' +
+                                    '\nIf not on subscription it is possible to sign up here - https://manchestermakerspace.org/membership/ ' +
+                                    ' Thank you for being a part of the makerspace! Please reach out in #membership with any questions.'
+                                );
+                            }
+                        }
                     }
+                    member.paidRetention++;
+                    if(memberStart > lastMonth && memberStart < currentTime){member.aquisitions++;}
                 }
-                member.paidRetention++;
-                if(memberStart > lastMonth && memberStart < currentTime){member.aquisitions++;}
-            }
-        } else { if(!memberDoc.groupExpiry && membersExpiration > lastMonth){member.losses++;} }
+            } else { if(!memberDoc.groupExpiry && membersExpiration > lastMonth){member.losses++;} }
 
-        if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
-            member.msg.metric += '\n' + memberDoc.fullname + '\'s key expired on ' + expiry;
-        }
+            if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
+                slack.send(memberDoc.fullname + '\'s key expired on ' + expiry, true);
+            }
+        };
     },
     finish: function(){
-        member.msg.msg += '\nCurrently we have ' + member.activeMembers + ' members with keys to the space';
-        member.msg.metric += '\nWe have ' + member.paidRetention + ' individual members and ' + member.activeGroupMembers + ' group members';
+        member.msg.metric += '\nCurrently we have ' + member.activeMembers + ' members with keys to the space';
+        member.msg.metric += '\nWe have ' + member.paidRetention + ' individual members';
         member.msg.metric += '\nIn the past month we gained ' + member.aquisitions + ' and lost ' + member.losses + ' individual members';
         var longTermPrePaid = member.paidRetention - (member.onSubscription + member.potentialLosses); // calculate those not on sub but not at risk
         member.msg.metric += '\nThere are ' + member.onSubscription + ' members on subscription, about ' + member.potentialLosses + ' at churn risk and about ' +
@@ -150,19 +154,21 @@ var rental = {
         as: "member"
     }}],
     msg: '',
-    stream: function(doc){
-        var date = new Date(); var currentTime = date.getTime();
-        var rentalExpiration = new Date(doc.expiration).getTime();
-        var expiry = new Date(doc.expiration).toDateString();
-        var name = doc.member[0].firstname + ' ' + doc.member[0].lastname;
-        if(currentTime > rentalExpiration){
-            if(doc.subscription){rental.msg += 'Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry + '\n';}
-            else{rental.msg += name + '\'s plot or locker expired on ' + expiry + '\n';}
-        }
-        if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){           // with in two weeks of expiring
-            if(doc.subscription){}                                                                  // exclude those on subscription
-            else{rental.msg += name + " needs to renew thier locker or plot by " + expiry + '\n';}  // Notify comming expiration to renewal channel
-        }
+    stream: function(cron){
+        return function(doc){
+            var date = new Date(); var currentTime = date.getTime();
+            var rentalExpiration = new Date(doc.expiration).getTime();
+            var expiry = new Date(doc.expiration).toDateString();
+            var name = doc.member[0].firstname + ' ' + doc.member[0].lastname;
+            if(currentTime > rentalExpiration){
+                if(doc.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
+                else                {slack.send(name + '\'s plot or locker expired on ' + expiry);}
+            }
+            if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){           // with in two weeks of expiring
+                if(doc.subscription){}                                                                  // exclude those on subscription
+                else{slack.send(name + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
+            }
+        };
     },
     finish: function(){return {msg: rental.msg, metric: ''};}
 };
@@ -179,13 +185,13 @@ var varify = {
 };
 
 var app = {
-    startup: function(collection, query, stream, finish){
+    cron: function(collection, query, stream, finish){
         return function(event, context){
             if(event && event.METRICS_CHANNEL && event.MEMBERS_CHANNEL){ // give ability to test from different channels from lambda
                 slack.MEMBERSHIP_PATH = event.MEMBERS_CHANNEL;
                 slack.METRIC_PATH = event.METRICS_CHANNEL;
             }
-            mongo.startQuery(collection, query, stream, function onFinish(){
+            mongo.startQuery(collection, query, stream(true), function onFinish(){
                 var msg = finish();
                 // console.log(msg.msg + '\n' + msg.metric);
                 slack.send(msg.msg); slack.send(msg.metric, true);
@@ -199,7 +205,7 @@ var app = {
             if(varify.request(event)){
                 response.statusCode = 200;
                 if(body.channel_id === process.env.PRIVATE_VIEW_CHANNEL || body.user_name === process.env.ADMIN){
-                    mongo.startQuery(collection, query, stream, function onFinish(){  // start db request before varification for speed
+                    mongo.startQuery(collection, query, stream(false), function onFinish(){  // start db request before varification for speed
                         var msg = finish();                                 // run passed compilation totalling function
                         response.body = JSON.stringify({
                             'response_type' : body.text === 'show' ? 'in_channel' : 'ephemeral', // 'in_channel' or 'ephemeral'
@@ -223,8 +229,8 @@ var app = {
     }
 };
 
-exports.member = app.startup(member.collection, member.aggregation, member.stream, member.finish);
-exports.rental = app.startup(rental.collection, rental.aggregation, rental.stream, rental.finish);
+exports.member = app.cron(member.collection, member.aggregation, member.stream, member.finish);
+exports.rental = app.cron(rental.collection, rental.aggregation, rental.stream, rental.finish);
 exports.memberApi = app.api(member.collection, member.aggregation, member.stream, member.finish);
 exports.rentalApi = app.api(rental.collection, rental.aggregation, rental.stream, rental.finish);
 // if(!module.parent){} // run stand alone test
