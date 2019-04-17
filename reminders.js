@@ -90,7 +90,7 @@ member = {
         }}
     ],
     msg: {msg: 'Renewal Reminders', metric: 'Expirations and Metrics'},
-    stream: function(cron){
+    stream: function(requester){
         return function(memberDoc){ // check if this member is close to expiring (FOR 24 hours) does not show expired members
             if(memberDoc.status === 'Revoked' || memberDoc.status === 'nonMember'){return;}     // Skip over non members
             var date = new Date(); var currentTime = date.getTime();
@@ -112,8 +112,10 @@ member = {
                     } else {
                         if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
                             member.potentialLosses++;
-                            slack.send(memberDoc.fullname + " needs to renew by " + expiry);
-                            if(cron){
+                            if(requester){
+                                slack.im(requester, memberDoc.fullname + " needs to renew by " + expiry);
+                            } else {
+                                slack.send(memberDoc.fullname + " needs to renew by " + expiry);
                                 slack.im(memberDoc.slack_id,
                                     'Hey ' + memberDoc.firstname +
                                     '! just a heads up, you may need to renew membership soon on ' + expiry +
@@ -154,19 +156,27 @@ var rental = {
         as: "member"
     }}],
     msg: '',
-    stream: function(cron){
+    stream: function(requester){
         return function(doc){
             var date = new Date(); var currentTime = date.getTime();
             var rentalExpiration = new Date(doc.expiration).getTime();
             var expiry = new Date(doc.expiration).toDateString();
             var name = doc.member[0].firstname + ' ' + doc.member[0].lastname;
             if(currentTime > rentalExpiration){
-                if(doc.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
-                else                {slack.send(name + '\'s plot or locker expired on ' + expiry);}
+                if(requester){
+                    slack.im(requester, name + '\'s plot or locker expired on ' + expiry);
+                } else {
+                    if(doc.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
+                    else                {slack.send(name + '\'s plot or locker expired on ' + expiry);}
+                }
             }
             if((currentTime + DAYS_14) > rentalExpiration && currentTime < rentalExpiration){           // with in two weeks of expiring
-                if(doc.subscription){}                                                                  // exclude those on subscription
-                else{slack.send(name + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
+                if(requester){
+                    slack.im(requester, name + " needs to renew thier locker or plot by " + expiry);
+                } else {
+                    if(doc.subscription){}                                                                  // exclude those on subscription
+                    else{slack.send(name + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
+                }
             }
         };
     },
@@ -191,9 +201,8 @@ var app = {
                 slack.MEMBERSHIP_PATH = event.MEMBERS_CHANNEL;
                 slack.METRIC_PATH = event.METRICS_CHANNEL;
             }
-            mongo.startQuery(collection, query, stream(true), function onFinish(){
+            mongo.startQuery(collection, query, stream(), function onFinish(){
                 var msg = finish();
-                // console.log(msg.msg + '\n' + msg.metric);
                 slack.send(msg.msg); slack.send(msg.metric, true);
             });
         };
@@ -205,19 +214,20 @@ var app = {
             if(varify.request(event)){
                 response.statusCode = 200;
                 if(body.channel_id === process.env.PRIVATE_VIEW_CHANNEL || body.user_name === process.env.ADMIN){
-                    mongo.startQuery(collection, query, stream(false), function onFinish(){  // start db request before varification for speed
+                    mongo.startQuery(collection, query, stream(body.user_id), function onFinish(){  // start db request before varification for speed
                         var msg = finish();                                 // run passed compilation totalling function
+                        slack.im(body.user_id, msg.msg + '\n' + msg.metric);
                         response.body = JSON.stringify({
-                            'response_type' : body.text === 'show' ? 'in_channel' : 'ephemeral', // 'in_channel' or 'ephemeral'
-                            'text' : msg.msg + '\n' + msg.metric
+                            'response_type' : 'ephemeral', // 'in_channel' or 'ephemeral'
+                            'text' : ''
                         });
                         callback(null, response);
                     });
                 } else {
-                    console.log(body.user_name + ' is curious');
+                    slack.send(body.user_name + ' is looking for access to renewal slash commands');
                     response.body = JSON.stringify({
                         'response_type' : 'ephemeral', // 'ephemeral' or 'in_channel'
-                        'text' : 'This information can only be displayed in unauthorized channels',
+                        'text' : 'This information is only displayed in members-relation channel, requesting access, thanks for your curiousity :)',
                     });
                     callback(null, response);
                 }
