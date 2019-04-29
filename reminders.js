@@ -73,19 +73,16 @@ var mongo = {
 member = {
     activeMembers: 0,
     paidRetention: 0,
-    activeGroupMembers: 0,
     aquisitions: 0,
     losses: 0,
     potentialLosses: 0,
     onSubscription: 0,
     collection: 'members',
     aggregation: [
-        {$lookup:{ from: "groups", localField: "groupName", foreignField: "groupName", as: "group"}},
         {$lookup:{ from: "slack_users", localField: "_id", foreignField: "member_id", as: "slack_user"}},
         {$project: {
             fullname: {$concat: ['$firstname', ' ', '$lastname']},
             expirationTime: 1, startDate: 1, status: 1, subscription: 1, firstname: 1,
-            groupExpiry: {$arrayElemAt: ['$group.expiry', 0]},
             slack_id: {$arrayElemAt: ['$slack_user.slack_id', 0]}
         }}
     ],
@@ -97,39 +94,34 @@ member = {
             var currentMonth = date.getMonth(); // date of current month
             date.setMonth(currentMonth - 1);    // increment month
             var lastMonth = date.getTime();     // date of proceeding month
-            // given that this is a group member assign group expiration time
-            var membersExpiration = memberDoc.groupExpiry ? memberDoc.groupExpiry: memberDoc.expirationTime;
-            var expiry = new Date(membersExpiration).toDateString();
-            membersExpiration = Number(membersExpiration); // Coerse type to be a number just in case its a date object
+            var expiry = new Date(memberDoc.expirationTime).toDateString();
+            memberDoc.expirationTime = Number(memberDoc.expirationTime); // Coerse type to be a number just in case its a date object
             var memberStart = Number(memberDoc.startDate); // If this is a date object Number will convert to millis
 
-            if(membersExpiration > currentTime){
+            if(memberDoc.expirationTime > currentTime){
                 member.activeMembers++;                               // check and increment, if active member
-                if(memberDoc.groupExpiry){member.activeGroupMembers++;} // count signed up group members
-                else {
-                    if(memberDoc.subscription){                           // only count subscription for current members in good standing
-                        member.onSubscription++;
-                    } else {
-                        if((currentTime + DAYS_14) > membersExpiration){ // if with in two weeks of expiring
-                            member.potentialLosses++;
-                            if(requester){
-                                slack.im(requester, memberDoc.fullname + " needs to renew by " + expiry);
-                            } else {
-                                slack.send(memberDoc.fullname + " needs to renew by " + expiry);
-                                slack.im(memberDoc.slack_id,
-                                    'Hey ' + memberDoc.firstname +
-                                    '! just a heads up, you may need to renew membership soon on ' + expiry +
-                                    '.\nThere are cases that this message sends when on subscription. If so we\'ll renew you as soon as your payment comes through. ' +
-                                    '\nIf not on subscription it is possible to sign up here - https://manchestermakerspace.org/membership/ ' +
-                                    ' Thank you for being a part of the makerspace! Please reach out in #membership with any questions.'
-                                );
-                            }
+                if(memberDoc.subscription){                           // only count subscription for current members in good standing
+                    member.onSubscription++;
+                } else {
+                    if((currentTime + DAYS_14) > memberDoc.expirationTime){ // if with in two weeks of expiring
+                        member.potentialLosses++;
+                        if(requester){
+                            slack.im(requester, memberDoc.fullname + " needs to renew by " + expiry);
+                        } else {
+                            slack.send(memberDoc.fullname + " needs to renew by " + expiry);
+                            slack.im(memberDoc.slack_id,
+                                'Hey ' + memberDoc.firstname +
+                                '! just a heads up, you may need to renew membership soon on ' + expiry +
+                                '.\nThere are cases that this message sends when on subscription. If so we\'ll renew you as soon as your payment comes through. ' +
+                                '\nIf not on subscription it is possible to sign up here - https://manchestermakerspace.org/membership/ ' +
+                                ' Thank you for being a part of the makerspace! Please reach out in #membership with any questions.'
+                            );
                         }
                     }
-                    member.paidRetention++;
-                    if(memberStart > lastMonth && memberStart < currentTime){member.aquisitions++;}
                 }
-            } else { if(!memberDoc.groupExpiry && membersExpiration > lastMonth){member.losses++;} }
+                member.paidRetention++;
+                if(memberStart > lastMonth && memberStart < currentTime){member.aquisitions++;}
+            } else { if(membersExpiration > lastMonth){member.losses++;} }
 
             if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
                 if(requester){slack.im(requester, memberDoc.fullname + '\'s key expired on ' + expiry);}
