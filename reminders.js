@@ -121,9 +121,9 @@ member = {
                 }
                 member.paidRetention++;
                 if(memberStart > lastMonth && memberStart < currentTime){member.aquisitions++;}
-            } else { if(membersExpiration > lastMonth){member.losses++;} }
+            } else { if(memberDoc.expirationTime > lastMonth){member.losses++;} }
 
-            if((currentTime - DAYS_14) < membersExpiration && currentTime > membersExpiration){ // if two weeks out of date regardless of whether they are on subscription or not
+            if((currentTime - DAYS_14) < memberDoc.expirationTime && currentTime > memberDoc.expirationTime){ // if two weeks out of date regardless of whether they are on subscription or not
                 if(requester){slack.im(requester, memberDoc.fullname + '\'s key expired on ' + expiry);}
                 else         {slack.send(memberDoc.fullname + '\'s key expired on ' + expiry, true);}
             }
