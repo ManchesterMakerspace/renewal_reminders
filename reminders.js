@@ -70,7 +70,7 @@ var mongo = {
     },
 };
 
-member = {
+var member = {
     activeMembers: 0,
     paidRetention: 0,
     aquisitions: 0,
@@ -93,7 +93,7 @@ member = {
             var date = new Date(); var currentTime = date.getTime();
             var currentMonth = date.getMonth(); // date of current month
             date.setMonth(currentMonth - 1);    // increment month
-            var lastMonth = date.getTime();     // date of proceeding month
+            var lastMonth = date.getTime();     // date of previous month
             var expiry = new Date(memberDoc.expirationTime).toDateString();
             memberDoc.expirationTime = Number(memberDoc.expirationTime); // Coerse type to be a number just in case its a date object
             var memberStart = Number(memberDoc.startDate); // If this is a date object Number will convert to millis
@@ -206,7 +206,7 @@ var app = {
             var response = {statusCode:403, headers: {'Content-type': 'application/json'}};
             if(varify.request(event)){
                 response.statusCode = 200;
-                if(body.channel_id === process.env.PRIVATE_VIEW_CHANNEL || body.user_name === process.env.ADMIN){
+                if(body.channel_id === process.env.PRIVATE_VIEW_CHANNEL){
                     mongo.startQuery(collection, query, stream(body.user_id), function onFinish(){  // start db request before varification for speed
                         var msg = finish();                                 // run passed compilation totalling function
                         slack.im(body.user_id, msg.msg + '\n' + msg.metric);
@@ -217,7 +217,7 @@ var app = {
                         callback(null, response);
                     });
                 } else {
-                    slack.send(body.user_name + ' is looking for access to renewal slash commands');
+                    slack.send(body.user_name + ' is looking for access to renewal slash commands', true);
                     response.body = JSON.stringify({
                         'response_type' : 'ephemeral', // 'ephemeral' or 'in_channel'
                         'text' : 'This information is only displayed in members-relation channel, requesting access, thanks for your curiousity :)',
