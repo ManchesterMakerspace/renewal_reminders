@@ -4,7 +4,7 @@ service: reminders
 provider:
     name: aws
     stage: prod
-    runtime: nodejs8.10
+    runtime: nodejs12.13
     region: us-east-1
     timeout: 3
     memorySize: 256
