@@ -100,7 +100,7 @@ var member = {
 
             if(memberDoc.expirationTime > currentTime){
                 member.activeMembers++;                               // check and increment, if active member
-                if(memberDoc.subscription){                           // only count subscription for current members in good standing
+                if(memberDoc.subscription || memberDoc.subscription_id){   // only count subscription for current members in good standing
                     member.onSubscription++;
                 } else {
                     if((currentTime + DAYS_14) > memberDoc.expirationTime){ // if with in two weeks of expiring
@@ -159,7 +159,7 @@ var rental = {
                 if(requester){
                     slack.im(requester, name + '\'s plot or locker expired on ' + expiry);
                 } else {
-                    if(doc.subscription){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
+                    if(doc.subscription || doc.subscription_id){slack.send('Subscription issue: ' + name + '\'s plot or locker expired on ' + expiry);}
                     else                {slack.send(name + '\'s plot or locker expired on ' + expiry);}
                 }
             }
@@ -167,7 +167,7 @@ var rental = {
                 if(requester){
                     slack.im(requester, name + " needs to renew thier locker or plot by " + expiry);
                 } else {
-                    if(doc.subscription){}                                                                  // exclude those on subscription
+                    if(doc.subscription || doc.subscription_id){}                                  // exclude those on subscription
                     else{slack.send(name + " needs to renew thier locker or plot by " + expiry);}  // Notify comming expiration to renewal channel
                 }
             }
