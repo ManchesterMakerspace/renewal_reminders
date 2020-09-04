@@ -15,6 +15,6 @@
   "homepage": "https://github.com/ManchesterMakerspace/RenewalReminders#readme",
   "private": true,
   "dependencies": {
-    "mongodb": "^3.1.10"
+    "mongodb": "^3.1.13"
   }
 }
