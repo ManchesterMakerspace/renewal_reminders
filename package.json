@@ -14,7 +14,13 @@
   },
   "homepage": "https://github.com/ManchesterMakerspace/RenewalReminders#readme",
   "private": true,
+  "scripts": {
+    "test": "NODE_ENV=test node test.js"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0"
+  },
   "dependencies": {
-    "mongodb": "^3.1.10"
+    "mongodb": "^3.5.7"
   }
 }

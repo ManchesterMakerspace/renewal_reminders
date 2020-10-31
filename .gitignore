@@ -4,3 +4,4 @@ local_test
 npm-debug.log
 jitploy/decrypted_*
 .serverless
+.env
